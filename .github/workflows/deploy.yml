@@ -1,0 +1,32 @@
+name: Laravel Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+
+    - name: Install dependencies
+      run: |
+        composer install --no-dev --optimize-autoloader
+
+    - name: Upload to Hostinger (via FTP)
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      with:
+        server: 88.223.84.65
+        username: u480978523.lmsapi.1staccesshomecareinc.com
+        password: ${{ secrets.FTP_PASSWORD }}
+        server-dir: public_html/     # <- adjust this as needed
+        local-dir: ./
