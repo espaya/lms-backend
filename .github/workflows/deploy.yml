@@ -28,5 +28,5 @@ jobs:
         server: 88.223.84.65
         username: u480978523.lmsapi.1staccesshomecareinc.com
         password: ${{ secrets.FTP_PASSWORD }}
-        server-dir: public_html/     # <- adjust this as needed
+        # server-dir: public_html/     # <- adjust this as needed
         local-dir: ./
