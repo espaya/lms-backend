@@ -7,7 +7,8 @@ use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 
 // Example protected route group
 Route::middleware(['web'])->group(function () {
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::get('/sanctum/csrf-cookie', fn () => response()->json(['csrf' => true]));
+    Route::post('/login', [AuthController::class, 'login'])->name('login');
 });
 
 Route::middleware(['auth:sanctum'])->group(function () {
@@ -19,9 +20,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
 });
 
 Route::middleware(['auth:sanctum', 'admin'])->group(function () {
-    Route::get('/admin/dashboard', fn () => response()->json(['message' => 'Welcome Admin']));
+    Route::get('/admin/dashboard', fn() => response()->json(['message' => 'Welcome Admin']));
 });
 
 Route::middleware(['auth:sanctum', 'user'])->group(function () {
-    Route::get('/user/dashboard', fn () => response()->json(['message' => 'Welcome User']));
+    Route::get('/user/dashboard', fn() => response()->json(['message' => 'Welcome User']));
 });

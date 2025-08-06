@@ -41,7 +41,7 @@ class AuthController extends Controller
         if (! $user || ! Hash::check($request->password, $user->password)) {
             RateLimiter::hit($throttleKey, 60); // Add delay for brute force protection
             return response()->json([
-                'message' => 'Invalid credentials'
+                'message' => 'Sign in was not successful. Try again later.'
             ], 401);
         }
 
@@ -57,7 +57,8 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Login successful, redirecting...',
             'token' => $token,
-            'user' => $user
+            'user' => $user,
+            'role' => $user->role // Explicitly include role
         ]);
     }
 
