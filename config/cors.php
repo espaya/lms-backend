@@ -6,7 +6,11 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://localhost:3000'],
+    'allowed_origins' => [
+        'http://localhost:3000', 
+        'https://lmsapi.1staccesshomecareinc.com', 
+        'https://lms.1staccesshomecareinc.com'
+    ],
 
     'allowed_origins_patterns' => [],
 
