@@ -18,9 +18,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 });
 
-// Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/admin/dashboard', fn () => response()->json(['message' => 'Welcome Admin']));
-// });
+});
 
 Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/user/dashboard', fn () => response()->json(['message' => 'Welcome User']));

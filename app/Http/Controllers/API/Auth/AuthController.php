@@ -28,6 +28,12 @@ class AuthController extends Controller
         $request->validate([
             'email' => 'required|email',
             'password' => 'required|string|min:6'
+        ], [
+            'email.required' => 'This field is required',
+            'email.email' => 'Invalid email',
+            'password.required' => 'This field is required',
+            'password.string' => 'Invalid inputs',
+            'password.min' => 'Password is too short'
         ]);
 
         $user = User::where('email', $request->email)->first();
@@ -49,7 +55,7 @@ class AuthController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            'message' => 'Login successful',
+            'message' => 'Login successful, redirecting...',
             'token' => $token,
             'user' => $user
         ]);
