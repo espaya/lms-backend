@@ -11,11 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('options', function (Blueprint $table) {
-            $table->id();
+        Schema::create('questions', function (Blueprint $table) {
+            $table->id(); // creates unsigned BIGINT
+            $table->foreignId('topic_id')->constrained()->onDelete('cascade');
+            $table->text('question_text');
             $table->timestamps();
         });
     }
+
 
     /**
      * Reverse the migrations.

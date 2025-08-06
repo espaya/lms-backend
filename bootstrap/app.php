@@ -16,8 +16,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             \Illuminate\Http\Middleware\HandleCors::class,
-            \App\Http\Middleware\AdminMiddleware::class => 'admin',
-            \App\Http\Middleware\UserMiddleware::class => 'user',
+            'admin' => \App\Http\Middleware\AdminMiddleware::class,
+            'user' => \App\Http\Middleware\UserMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

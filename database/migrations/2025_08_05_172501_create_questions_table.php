@@ -13,9 +13,14 @@ return new class extends Migration
     {
         Schema::create('questions', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('topic_id')->constrained()->onDelete('cascade');
+            $table->text('question_text');
+            $table->json('options'); // stores multiple choice options as a JSON array
+            $table->unsignedTinyInteger('correct_index'); // stores the index of the correct option (0-based)
             $table->timestamps();
         });
     }
+
 
     /**
      * Reverse the migrations.
