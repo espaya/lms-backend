@@ -7,14 +7,16 @@ use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 
 // Example protected route group
 // Authentication routes
-Route::prefix('auth')->group(function () {
-    Route::get('/csrf-cookie', fn() => response()->json(['csrf' => true]));
-    Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
-});
+// Route::prefix('auth')->group(function () {
+    
+// });
+
+Route::get('/csrf-cookie', fn() => response()->json(['csrf' => true]));
+Route::post('/login', [AuthController::class, 'login']);
 
 // Authenticated API routes
 Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
