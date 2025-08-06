@@ -6,23 +6,28 @@ use Illuminate\Support\Facades\Route;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 
 // Example protected route group
-Route::middleware(['web'])->group(function () {
-    Route::get('/sanctum/csrf-cookie', fn () => response()->json(['csrf' => true]));
-    Route::post('/login', [AuthController::class, 'login'])->name('login');
+// Authentication routes
+Route::prefix('auth')->group(function () {
+    Route::get('/csrf-cookie', fn() => response()->json(['csrf' => true]));
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 });
 
-Route::middleware(['auth:sanctum'])->group(function () {
+// Authenticated API routes
+Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
 
-    Route::post('/logout', [AuthController::class, 'logout']);
-});
-
-Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+    // Add other API endpoints here
     Route::get('/admin/dashboard', fn() => response()->json(['message' => 'Welcome Admin']));
-});
-
-Route::middleware(['auth:sanctum', 'user'])->group(function () {
     Route::get('/user/dashboard', fn() => response()->json(['message' => 'Welcome User']));
 });
+
+// Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+//     Route::get('/admin/dashboard', fn() => response()->json(['message' => 'Welcome Admin']));
+// });
+
+// Route::middleware(['auth:sanctum', 'user'])->group(function () {
+//     Route::get('/user/dashboard', fn() => response()->json(['message' => 'Welcome User']));
+// });
