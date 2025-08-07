@@ -24,6 +24,8 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/admin/dashboard/get-subjects', [QuestionManagerController::class, 'index']); //
     Route::get('/subjects', [QuestionManagerController::class, 'getSubject']);
     Route::get('/topics', [QuestionManagerController::class, 'getTopic']);
+    Route::get('/topics/{topic}/questions', [QuestionManagerController::class, 'getQuestions']);
+
 });
 
 Route::middleware(['auth:sanctum', 'user'])->group(function () {

@@ -15,7 +15,7 @@ class QuestionManagerController extends Controller
 {
     public function index()
     {
-        $subjects = Subject::with('topics')->orderBy('id', 'DESC')->paginate(10);
+        $subjects = Subject::with(['topics'])->orderBy('id', 'DESC')->paginate(10);
 
         return response()->json([
             'success' => true,
@@ -65,7 +65,8 @@ class QuestionManagerController extends Controller
         try {
             $perPage = $request->input('per_page', 10); // Default to 10 items per page
 
-            $topic = Topic::orderBy('id', 'DESC')
+            $topic = Topic::with('questions')
+                ->orderBy('id', 'DESC')
                 ->paginate($perPage);
 
             return response()->json([
@@ -164,5 +165,15 @@ class QuestionManagerController extends Controller
             Log::error('Error uploading questions: ' . $ex->getMessage());
             return response()->json(['message' => 'Error uploading questions. Try again later'], 500);
         }
+    }
+
+    public function getQuestions(Topic $topic)
+    {
+        $questions = $topic->questions()->select('id', 'question_text', 'options', 'correct_index')->get();
+
+        return response()->json([
+            'success' => true,
+            'questions' => $questions
+        ]);
     }
 }
