@@ -31,6 +31,63 @@ class QuestionManagerController extends Controller
         ]);
     }
 
+    public function getSubject(Request $request)
+    {
+        try {
+            $perPage = $request->input('per_page', 10); // Default to 10 items per page
+
+            $subjects = Subject::orderBy('id', 'DESC')
+                ->paginate($perPage);
+
+            return response()->json([
+                'success' => true,
+                'data' => $subjects->items(),
+                'pagination' => [
+                    'total' => $subjects->total(),
+                    'per_page' => $subjects->perPage(),
+                    'current_page' => $subjects->currentPage(),
+                    'last_page' => $subjects->lastPage(),
+                    'from' => $subjects->firstItem(),
+                    'to' => $subjects->lastItem()
+                ]
+            ]);
+        } catch (\Exception $ex) {
+            Log::error('Error getting subjects: ' . $ex->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving subjects'
+            ], 500);
+        }
+    }
+
+    public function getTopic(Request $request)
+    {
+        try {
+            $perPage = $request->input('per_page', 10); // Default to 10 items per page
+
+            $topic = Topic::orderBy('id', 'DESC')
+                ->paginate($perPage);
+
+            return response()->json([
+                'success' => true,
+                'data' => $topic->items(),
+                'pagination' => [
+                    'total' => $topic->total(),
+                    'per_page' => $topic->perPage(),
+                    'current_page' => $topic->currentPage(),
+                    'last_page' => $topic->lastPage(),
+                    'from' => $topic->firstItem(),
+                    'to' => $topic->lastItem()
+                ]
+            ]);
+        } catch (\Exception $ex) {
+            Log::error('Error getting topic: ' . $ex->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving topic'
+            ], 500);
+        }
+    }
 
     public function store(Request $request)
     {

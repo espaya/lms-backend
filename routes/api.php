@@ -21,7 +21,9 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/admin/dashboard', fn() => response()->json(['message' => 'Welcome Admin']));
     // Add other API endpoints here
     Route::post('/admin/dashboard/upload-questions', [QuestionManagerController::class, 'store']);
-    Route::get('/admin/dashboard/get-subjects', [QuestionManagerController::class, 'index']);
+    Route::get('/admin/dashboard/get-subjects', [QuestionManagerController::class, 'index']); //
+    Route::get('/subjects', [QuestionManagerController::class, 'getSubject']);
+    Route::get('/topics', [QuestionManagerController::class, 'getTopic']);
 });
 
 Route::middleware(['auth:sanctum', 'user'])->group(function () {
