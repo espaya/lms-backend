@@ -136,9 +136,20 @@ class QuestionManagerController extends Controller
                 ]);
 
                 foreach ($request->questions as $questionData) {
+                    // Generate base slug from question text (trim to 50 chars to keep slug manageable)
+                    $baseQuestionSlug = Str::slug(Str::limit($questionData['text'], 50));
+                    $questionSlug = $baseQuestionSlug;
+                    $questionCounter = 1;
+
+                    // Ensure the question slug is unique
+                    while (Question::where('slug', $questionSlug)->exists()) {
+                        $questionSlug = $baseQuestionSlug . '-' . $questionCounter++;
+                    }
+
                     Question::create([
                         'topic_id' => $topic->id,
                         'question_text' => $questionData['text'],
+                        'slug' => $questionSlug,
                         'options' => json_encode($questionData['options']),
                         'correct_index' => $questionData['correctIndex']
                     ]);
