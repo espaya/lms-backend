@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Answer;
 use App\Models\Question;
 use App\Models\Subject;
 use App\Models\Topic;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -174,6 +176,134 @@ class QuestionManagerController extends Controller
         return response()->json([
             'success' => true,
             'questions' => $questions
+        ]);
+    }
+
+    public function storeAnswer(Request $request)
+    {
+        $validated = $request->validate([
+            'topic_id' => ['required', 'exists:topics,id'],
+            'score' => ['required', 'integer'],
+            'total' => ['required', 'integer'],
+            'time' => ['nullable', 'string'],
+            'answers' => ['required', 'array'],
+            'answers.*.question_id' => ['required', 'exists:questions,id'],
+            'answers.*.answer_index' => ['required', 'integer'],
+        ], [
+            'topic_id.required' => 'The topic for this question is required',
+            'topic_id.exists' => 'Cannot find this question\'s topic',
+            'score.required' => 'Your score is missing',
+            'score.integer' => 'Invalid score',
+            'total.required' => 'Total questions count is required',
+            'total.integer' => 'Invalid total questions count',
+            'answers.required' => 'Answer all questions',
+            'answers.array' => 'The answers are invalid'
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            $topicId = $validated['topic_id'];
+            $userId = Auth::id();
+
+            // Prevent duplicate attempts
+            if (Answer::where('user_id', $userId)->where('topic_id', $topicId)->exists()) {
+                return response()->json(['message' => 'You have already answered this topic'], 409);
+            }
+
+            // Fetch correct indexes for all questions
+            $questionIds = collect($validated['answers'])->pluck('question_id')->toArray();
+            $correctIndexes = Question::whereIn('id', $questionIds)
+                ->pluck('correct_index', 'id')
+                ->toArray();
+
+            // Build answers JSON with correct_index included
+            $answersJson = collect($validated['answers'])->map(function ($ans) use ($correctIndexes) {
+                return [
+                    'question_id' => $ans['question_id'],
+                    'answer_index' => $ans['answer_index'],
+                    'correct_index' => $correctIndexes[$ans['question_id']] ?? null
+                ];
+            });
+
+            // Save one row
+            Answer::create([
+                'user_id' => $userId,
+                'topic_id' => $topicId,
+                'answers' => json_encode($answersJson),
+                'score' => $validated['score'],
+                'total' => $validated['total'],
+                'time' => $validated['time'] ?? null,
+            ]);
+
+            DB::commit();
+
+            return response()->json(['message' => 'Answers saved successfully']);
+        } catch (\Exception $ex) {
+            DB::rollBack();
+            Log::error("Error saving your answer: " . $ex->getMessage());
+            return response()->json(['message' => 'Error saving your answer: ' . $ex->getMessage()], 500);
+        }
+    }
+
+    public function summary($topicId)
+    {
+        $userId = Auth::id();
+
+        try {
+            $grade = Answer::where('user_id', $userId)
+                ->where('topic_id', $topicId)
+                ->select('score', 'total', 'answers', 'created_at')
+                ->first();
+
+            if (!$grade) {
+                return response()->json(['message' => 'No summary found'], 404);
+            }
+
+            return response()->json($grade);
+        } catch (Exception $ex) {
+            Log::error("Error getting summary: " . $ex->getMessage());
+            return response()->json(['message' => 'Error getting summary']);
+        }
+    }
+
+    public function showByTopic($topicId)
+    {
+        $answer = Answer::where('user_id', Auth::id())
+            ->where('topic_id', $topicId)
+            ->first();
+
+        if (!$answer) {
+            return response()->json(['message' => 'No answers found'], 404);
+        }
+
+        // Decode answers JSON
+        $submittedAnswers = json_decode($answer->answers, true);
+
+        // Get the questions for the topic
+        $questions = Question::where('topic_id', $topicId)
+            ->get(['id', 'question_text', 'options', 'correct_index']);
+
+        // Compare and merge
+        $result = $questions->map(function ($question) use ($submittedAnswers) {
+            $userAnswer = collect($submittedAnswers)->firstWhere('question_id', (string) $question->id);
+
+            return [
+                'id' => $question->id,
+                'question_text' => $question->question_text,
+                'options' => json_decode($question->options),
+                'correct_index' => $question->correct_index,
+                'user_answer' => $userAnswer['answer_index'] ?? null,
+                'is_correct' => isset($userAnswer['answer_index']) && $userAnswer['answer_index'] == $question->correct_index
+            ];
+        });
+
+        return response()->json([
+            'user_id' =>$answer->user_id,
+            'topic_id' => $topicId,
+            'score' => $answer->score,
+            'total' => $answer->total,
+            'answers' => $result
         ]);
     }
 }
