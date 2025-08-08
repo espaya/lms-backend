@@ -90,4 +90,29 @@ class UserController extends Controller
             );
         }
     }
+
+    public function view($username)
+    {
+        try {
+            $user = User::where('name', $username)->first();
+
+            if (!$user) {
+                return response()->json(['message' => 'User not found'], 404);
+            }
+
+            $profile = DB::table('users_profile')->where('applicant_id', $user->id)->first();
+            $presentAddress = DB::table('present_address')->where('applicant_id', $user->id)->first();
+
+            $singleProfile = [
+                'user' => $user,
+                'profile' => $profile ?: null,
+                'present_address' => $presentAddress ?: null
+            ];
+
+            return response()->json($singleProfile);
+        } catch (Exception $ex) {
+            Log::error('Error fetching user data: ' . $ex->getMessage());
+            return response()->json(['message' => 'Error getting user data'], 500);
+        }
+    }
 }
