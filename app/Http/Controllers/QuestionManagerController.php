@@ -11,7 +11,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\File;
 
 class QuestionManagerController extends Controller
 {
@@ -189,6 +191,8 @@ class QuestionManagerController extends Controller
             'answers' => ['required', 'array'],
             'answers.*.question_id' => ['required', 'exists:questions,id'],
             'answers.*.answer_index' => ['required', 'integer'],
+            'signature' => ['required', 'string'], // base64 string
+            'declaration' => ['required'],
         ], [
             'topic_id.required' => 'The topic for this question is required',
             'topic_id.exists' => 'Cannot find this question\'s topic',
@@ -197,7 +201,10 @@ class QuestionManagerController extends Controller
             'total.required' => 'Total questions count is required',
             'total.integer' => 'Invalid total questions count',
             'answers.required' => 'Answer all questions',
-            'answers.array' => 'The answers are invalid'
+            'answers.array' => 'The answers are invalid',
+            'signature.required' => 'Your signature is required',
+            'signature.string' => 'Invalid signature',
+            'declaration.required' => 'Accept the declaration'
         ]);
 
         DB::beginTransaction();
@@ -211,13 +218,21 @@ class QuestionManagerController extends Controller
                 return response()->json(['message' => 'You have already answered this topic'], 409);
             }
 
-            // Fetch correct indexes for all questions
+            // Prepare signature (don't save yet)
+            $signatureData = $validated['signature'];
+            if (strpos($signatureData, 'data:image/png;base64,') === 0) {
+                $signatureData = substr($signatureData, strlen('data:image/png;base64,'));
+            }
+            $signatureData = str_replace(' ', '+', $signatureData);
+            $image = base64_decode($signatureData);
+            $fileName = 'signature_' . $userId . '_' . time() . '.png';
+
+            // Fetch correct indexes
             $questionIds = collect($validated['answers'])->pluck('question_id')->toArray();
             $correctIndexes = Question::whereIn('id', $questionIds)
                 ->pluck('correct_index', 'id')
                 ->toArray();
 
-            // Build answers JSON with correct_index included
             $answersJson = collect($validated['answers'])->map(function ($ans) use ($correctIndexes) {
                 return [
                     'question_id' => $ans['question_id'],
@@ -226,7 +241,7 @@ class QuestionManagerController extends Controller
                 ];
             });
 
-            // Save one row
+            // Insert DB record (still inside transaction)
             Answer::create([
                 'user_id' => $userId,
                 'topic_id' => $topicId,
@@ -234,17 +249,27 @@ class QuestionManagerController extends Controller
                 'score' => $validated['score'],
                 'total' => $validated['total'],
                 'time' => $validated['time'] ?? null,
+                'signature' => $fileName,
+                'declaration' => $validated['declaration'],
             ]);
 
             DB::commit();
+
+            // ✅ Now save the signature file only after DB commit
+            $signaturePath = storage_path('app/public/signature');
+            if (!File::exists($signaturePath)) {
+                File::makeDirectory($signaturePath, 0755, true);
+            }
+            Storage::disk('public')->put('signature/' . $fileName, $image);
 
             return response()->json(['message' => 'Answers saved successfully']);
         } catch (\Exception $ex) {
             DB::rollBack();
             Log::error("Error saving your answer: " . $ex->getMessage());
-            return response()->json(['message' => 'Error saving your answer: ' . $ex->getMessage()], 500);
+            return response()->json(['message' => 'Error saving your answer, try again later or contact your website admin'], 500);
         }
     }
+
 
     public function summary($topicId)
     {
@@ -299,7 +324,7 @@ class QuestionManagerController extends Controller
         });
 
         return response()->json([
-            'user_id' =>$answer->user_id,
+            'user_id' => $answer->user_id,
             'topic_id' => $topicId,
             'score' => $answer->score,
             'total' => $answer->total,

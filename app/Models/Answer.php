@@ -13,7 +13,9 @@ class Answer extends Model
         'answers',
         'score',
         'time',
-        'total'
+        'total',
+        'signature',
+        'declaration'
     ];
 
     public function user()
