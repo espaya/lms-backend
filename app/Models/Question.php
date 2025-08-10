@@ -11,7 +11,8 @@ class Question extends Model
         'topic_id', 
         'options', 
         'correct_index', 
-        'slug'
+        'slug',
+        'file'
     ];
 
     public function topic()

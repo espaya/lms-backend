@@ -104,13 +104,25 @@ class QuestionManagerController extends Controller
             'questions.*.text' => ['required', 'string'],
             'questions.*.options' => ['required', 'array', 'min:1'],
             'questions.*.correctIndex' => ['required', 'integer'],
-            'file' => ['required', 'mimes:pdf']
+            'file' => ['required', 'file', 'mimes:pdf']
         ]);
 
         $uploadedFilePath = null;
 
         try {
             DB::beginTransaction();
+
+            // ✅ First upload the file so we have its name
+            $file = $request->file('file');
+            $uploadDir = storage_path('app/public/questions');
+
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
+            }
+
+            $fileName = time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
+            $file->move($uploadDir, $fileName);
+            $uploadedFilePath = $uploadDir . '/' . $fileName;
 
             // Generate unique slug for subject
             $baseSlug = Str::slug($request->subject);
@@ -143,49 +155,36 @@ class QuestionManagerController extends Controller
                 ]);
 
                 foreach ($request->questions as $questionData) {
-                    // Generate base slug from question text (trim to 50 chars to keep slug manageable)
+                    // Generate unique slug for question
                     $baseQuestionSlug = Str::slug(Str::limit($questionData['text'], 50));
                     $questionSlug = $baseQuestionSlug;
                     $questionCounter = 1;
 
-                    // Ensure the question slug is unique
                     while (Question::where('slug', $questionSlug)->exists()) {
                         $questionSlug = $baseQuestionSlug . '-' . $questionCounter++;
                     }
 
                     Question::create([
-                        'topic_id' => $topic->id,
-                        'question_text' => $questionData['text'],
-                        'slug' => $questionSlug,
-                        'options' => json_encode($questionData['options']),
-                        'correct_index' => $questionData['correctIndex']
+                        'topic_id'       => $topic->id,
+                        'question_text'  => $questionData['text'],
+                        'slug'           => $questionSlug,
+                        'options'        => json_encode($questionData['options']),
+                        'correct_index'  => $questionData['correctIndex'],
+                        'file'      => $fileName // ✅ Store uploaded file name here
                     ]);
                 }
             }
-
-            // ✅ Handle file upload (only after DB operations are prepared)
-            $file = $request->file('file');
-            $uploadDir = storage_path('app/public/questions');
-
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0755, true);
-            }
-
-            $fileName = time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
-            $file->move($uploadDir, $fileName);
-
-            $uploadedFilePath = $uploadDir . '/' . $fileName;
 
             DB::commit();
 
             return response()->json([
                 'message' => 'Questions uploaded successfully',
-                'file_path' => asset('storage/uploads/questions/' . $fileName)
+                'file_path' => asset('storage/questions/' . $fileName)
             ]);
         } catch (Exception $ex) {
             DB::rollBack();
 
-            // ❌ Remove uploaded file if something went wrong
+            // Remove uploaded file if error
             if ($uploadedFilePath && file_exists($uploadedFilePath)) {
                 unlink($uploadedFilePath);
             }
@@ -197,6 +196,7 @@ class QuestionManagerController extends Controller
             ], 500);
         }
     }
+
 
 
     public function getQuestions(Topic $topic)
