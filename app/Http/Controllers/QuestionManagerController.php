@@ -148,10 +148,12 @@ class QuestionManagerController extends Controller
                     $topicSlug = $baseTopicSlug . '-' . $topicCounter++;
                 }
 
+                // ✅ Store file name in topic
                 $topic = Topic::create([
                     'subject_id' => $subject->id,
-                    'name' => $topicName,
-                    'slug' => $topicSlug
+                    'name'       => $topicName,
+                    'slug'       => $topicSlug,
+                    'fileName'       => $fileName // <-- Added
                 ]);
 
                 foreach ($request->questions as $questionData) {
@@ -169,8 +171,7 @@ class QuestionManagerController extends Controller
                         'question_text'  => $questionData['text'],
                         'slug'           => $questionSlug,
                         'options'        => json_encode($questionData['options']),
-                        'correct_index'  => $questionData['correctIndex'],
-                        'file'      => $fileName // ✅ Store uploaded file name here
+                        'correct_index'  => $questionData['correctIndex']
                     ]);
                 }
             }
@@ -184,7 +185,6 @@ class QuestionManagerController extends Controller
         } catch (Exception $ex) {
             DB::rollBack();
 
-            // Remove uploaded file if error
             if ($uploadedFilePath && file_exists($uploadedFilePath)) {
                 unlink($uploadedFilePath);
             }
@@ -196,6 +196,7 @@ class QuestionManagerController extends Controller
             ], 500);
         }
     }
+
 
 
 

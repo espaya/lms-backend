@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Topic extends Model
 {
-    protected $fillable = ['subject_id', 'name', 'slug'];
+    protected $fillable = ['subject_id', 'name', 'slug', 'fileName'];
 
     public function subject()
     {
