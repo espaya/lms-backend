@@ -210,6 +210,9 @@ class QuestionManagerController extends Controller
             // Keep subject reference before deleting topic
             $subject = $topic->subject;
 
+            // Delete all answers related to this topic
+            $topic->answers()->delete();
+
             // Delete associated file if exists
             if ($topic->fileName) {
                 $filePath = storage_path("app/public/questions/{$topic->fileName}");
@@ -335,7 +338,6 @@ class QuestionManagerController extends Controller
             return response()->json(['message' => 'Error saving your answer, try again later or contact your website admin'], 500);
         }
     }
-
 
     public function summary($topicId)
     {

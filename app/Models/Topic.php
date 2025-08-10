@@ -8,6 +8,11 @@ class Topic extends Model
 {
     protected $fillable = ['subject_id', 'name', 'slug', 'fileName'];
 
+    public function answers()
+    {
+        return $this->hasMany(Answer::class);
+    }
+
     public function subject()
     {
         return $this->belongsTo(Subject::class);
