@@ -104,8 +104,10 @@ class QuestionManagerController extends Controller
             'questions.*.text' => ['required', 'string'],
             'questions.*.options' => ['required', 'array', 'min:1'],
             'questions.*.correctIndex' => ['required', 'integer'],
+            'file' => ['required', 'mimes:pdf']
         ]);
 
+        $uploadedFilePath = null;
 
         try {
             DB::beginTransaction();
@@ -161,15 +163,41 @@ class QuestionManagerController extends Controller
                 }
             }
 
+            // ✅ Handle file upload (only after DB operations are prepared)
+            $file = $request->file('file');
+            $uploadDir = storage_path('app/public/questions');
+
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
+            }
+
+            $fileName = time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
+            $file->move($uploadDir, $fileName);
+
+            $uploadedFilePath = $uploadDir . '/' . $fileName;
+
             DB::commit();
 
-            return response()->json(['message' => 'Questions uploaded successfully']);
+            return response()->json([
+                'message' => 'Questions uploaded successfully',
+                'file_path' => asset('storage/uploads/questions/' . $fileName)
+            ]);
         } catch (Exception $ex) {
             DB::rollBack();
+
+            // ❌ Remove uploaded file if something went wrong
+            if ($uploadedFilePath && file_exists($uploadedFilePath)) {
+                unlink($uploadedFilePath);
+            }
+
             Log::error('Error uploading questions: ' . $ex->getMessage());
-            return response()->json(['message' => 'Error uploading questions. Try again later'], 500);
+
+            return response()->json([
+                'message' => 'Error uploading questions. Try again later'
+            ], 500);
         }
     }
+
 
     public function getQuestions(Topic $topic)
     {
