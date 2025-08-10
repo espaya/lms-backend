@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Answer;
 use App\Models\User;
 use Exception;
 use Illuminate\Http\Request;
@@ -113,6 +114,34 @@ class UserController extends Controller
         } catch (Exception $ex) {
             Log::error('Error fetching user data: ' . $ex->getMessage());
             return response()->json(['message' => 'Error getting user data'], 500);
+        }
+    }
+
+    public function getUserAnswers($username)
+    {
+        try {
+            $user = User::where('name', $username)->first();
+
+            if (!$user) {
+                return response()->json(['message' => 'User not found!'], 404);
+            }
+
+            $answers = Answer::with('topic')
+                ->where('user_id', $user->id)
+                ->orderBy('id', 'DESC')
+                ->get();
+
+            if ($answers->isEmpty()) {
+                return response()->json(['message' => "This user's report was not found!"], 404);
+            }
+
+            return response()->json([
+                'user' => $user->only(['id', 'name', 'email']),
+                'answers' => $answers
+            ]);
+        } catch (\Exception $ex) {
+            Log::error($ex->getMessage());
+            return response()->json(['message' => 'Error getting report'], 500);
         }
     }
 }
