@@ -3,6 +3,7 @@
 use App\Http\Controllers\API\Auth\AuthController;
 use App\Http\Controllers\QuestionManagerController;
 use App\Http\Controllers\API\Admin\UserController;
+use App\Http\Controllers\API\Student\StudentController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -38,4 +39,6 @@ Route::middleware(['auth:sanctum', 'user'])->group(function () {
     Route::get('/user/dashboard', fn() => response()->json(['message' => 'Welcome User']));
     // Add other API endpoints here;
     Route::post('/answers', [QuestionManagerController::class, 'storeAnswer']);
+    Route::post('/user/update-my-profile/{id}', [StudentController::class, 'update']);
+     Route::get('/user/my-profile/{username}', [StudentController::class, 'index']);
 });
