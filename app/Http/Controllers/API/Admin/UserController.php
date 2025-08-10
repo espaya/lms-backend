@@ -117,9 +117,10 @@ class UserController extends Controller
         }
     }
 
-    public function getUserAnswers($username)
+    public function getUserAnswers(Request $request,  $username)
     {
         try {
+            $perPage = $request->input("per_page", 10);
             $user = User::where('name', $username)->first();
 
             if (!$user) {
@@ -128,8 +129,8 @@ class UserController extends Controller
 
             $answers = Answer::with('topic')
                 ->where('user_id', $user->id)
-                ->orderBy('id', 'DESC')
-                ->get();
+                ->orderBy("created_at", "DESC")
+                ->paginate($perPage);
 
             if ($answers->isEmpty()) {
                 return response()->json(['message' => "This user's report was not found!"], 404);
@@ -137,10 +138,16 @@ class UserController extends Controller
 
             return response()->json([
                 'user' => $user->only(['id', 'name', 'email']),
-                'answers' => $answers
+                'answers' => $answers->items(),
+                'meta' => [
+                    'current_page' => $answers->currentPage(),
+                    'last_page' => $answers->lastPage(),
+                    'per_page' => $answers->perPage(),
+                    'total' => $answers->total()
+                ]
             ]);
         } catch (\Exception $ex) {
-            Log::error($ex->getMessage());
+            \Log::error($ex->getMessage());
             return response()->json(['message' => 'Error getting report'], 500);
         }
     }
