@@ -7,9 +7,11 @@ use App\Models\Answer;
 use App\Models\User;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
@@ -66,6 +68,71 @@ class UserController extends Controller
         }
     }
 
+
+    public function updateUser(Request $request, $id)
+    {
+        $request->validate([
+            'name' => [
+                'required',
+                'string',
+                Rule::unique('users', 'name')->ignore($id) // unique but ignore current user
+            ],
+            'email' => [
+                'required',
+                'email',
+                Rule::unique('users', 'email')->ignore($id) // same logic for email
+            ],
+            'role' => ['nullable', 'string', 'in:USER'],
+            'old_password' => ['nullable', 'string', function ($attribute, $value, $fail) {
+                if (!Hash::check($value, Auth::user()->password)) {
+                    $fail('The old password is incorrect.');
+                }
+            }],
+            'new_password' => [
+                'nullable',
+                'string',
+                // 'confirmed', // requires confirm_password field
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/',
+                'different:old_password'
+            ],
+            'confirm_password' => ['same:new_password']
+        ], [
+            'new_password.regex' => 'Password must be at least 8 characters long, contain uppercase, lowercase, number, and special character.'
+        ]);
+
+        try {
+            $user = User::findOrFail($id);
+
+            if (!$user) {
+                return response()->json(['message' => 'This user was not found!']);
+            }
+
+            // Update fields
+            $user->name = $request->name;
+            $user->email = $request->email;
+            // $user->role = $request->role ?? $user->role;
+
+            // Only hash and set password if a new one is provided
+            if ($request->filled('new_password')) {
+                $user->password = Hash::make($request->new_password);
+            }
+
+            // Save only if changes are made
+            if ($user->isDirty()) {
+                $user->save();
+                return response()->json(['message' => 'User updated successfully']);
+            }
+
+            return response()->json(['message' => 'No changes detected']);
+        } catch (\Exception $ex) {
+            return response()->json([
+                'message' => 'An error occurred while updating user.',
+                'error' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+
     public function index(Request $request)
     {
         try {
@@ -101,16 +168,7 @@ class UserController extends Controller
                 return response()->json(['message' => 'User not found'], 404);
             }
 
-            $profile = DB::table('users_profile')->where('applicant_id', $user->id)->first();
-            $presentAddress = DB::table('present_address')->where('applicant_id', $user->id)->first();
-
-            $singleProfile = [
-                'user' => $user,
-                'profile' => $profile ?: null,
-                'present_address' => $presentAddress ?: null
-            ];
-
-            return response()->json($singleProfile);
+            return response()->json($user);
         } catch (Exception $ex) {
             Log::error('Error fetching user data: ' . $ex->getMessage());
             return response()->json(['message' => 'Error getting user data'], 500);
@@ -147,7 +205,7 @@ class UserController extends Controller
                 ]
             ]);
         } catch (\Exception $ex) {
-            \Log::error($ex->getMessage());
+            Log::error($ex->getMessage());
             return response()->json(['message' => 'Error getting report'], 500);
         }
     }
