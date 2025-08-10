@@ -200,20 +200,25 @@ class QuestionManagerController extends Controller
     public function destroy($id)
     {
         try {
-            // Find the topic
             $topic = Topic::find($id);
 
             if (!$topic) {
                 return response()->json(['message' => 'Topic not found!'], 404);
             }
 
-            // Keep subject reference before deleting topic
             $subject = $topic->subject;
 
-            // Delete all answers related to this topic
+            foreach ($topic->answers as $answer) {
+                if ($answer->signature) {
+                    $signaturePath = storage_path("app/signature/{$answer->signature_file}");
+                    if (file_exists($signaturePath)) {
+                        unlink($signaturePath);
+                    }
+                }
+            }
+
             $topic->answers()->delete();
 
-            // Delete associated file if exists
             if ($topic->fileName) {
                 $filePath = storage_path("app/public/questions/{$topic->fileName}");
                 if (file_exists($filePath)) {
@@ -221,16 +226,14 @@ class QuestionManagerController extends Controller
                 }
             }
 
-            // Delete the topic
             $topic->delete();
 
-            // Check if subject has any other topics left
             if ($subject && $subject->topics()->count() === 0) {
                 $subject->delete();
             }
 
             return response()->json([
-                'message' => 'Topic and its associated questions deleted successfully, subject deleted if no topics left'
+                'message' => 'Topic, associated answers, and files deleted successfully; subject deleted if no topics left'
             ]);
         } catch (\Exception $ex) {
             Log::error("Error deleting topic: " . $ex->getMessage());
@@ -239,6 +242,7 @@ class QuestionManagerController extends Controller
             ], 500);
         }
     }
+
 
     public function getQuestions(Topic $topic)
     {
