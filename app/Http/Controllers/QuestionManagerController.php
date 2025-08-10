@@ -210,7 +210,7 @@ class QuestionManagerController extends Controller
 
             foreach ($topic->answers as $answer) {
                 if ($answer->signature) {
-                    $signaturePath = storage_path("app/signature/{$answer->signature_file}");
+                    $signaturePath = storage_path("app/public/signature/{$answer->signature_file}");
                     if (file_exists($signaturePath)) {
                         unlink($signaturePath);
                     }
