@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -15,6 +16,35 @@ class AuthController extends Controller
 {
     public function login(Request $request)
     {
+        // Validate inputs including reCAPTCHA token
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string|min:6',
+            'captcha_token' => 'required|string'
+        ], [
+            'email.required' => 'This field is required',
+            'email.email' => 'Invalid email',
+            'password.required' => 'This field is required',
+            'password.string' => 'Invalid inputs',
+            'password.min' => 'Password is too short',
+            'captcha_token.required' => 'Please complete the captcha'
+        ]);
+
+        // 1️⃣ Verify reCAPTCHA with Google
+        $recaptchaResponse = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+            'secret' => env('RECAPTCHA_SECRET_KEY'),
+            'response' => $request->captcha_token,
+            'remoteip' => $request->ip()
+        ])->json();
+
+        
+
+        if (!isset($recaptchaResponse['success']) || $recaptchaResponse['success'] !== true) {
+            return response()->json([
+                'message' => 'Captcha verification failed. Please try again.'
+            ], 422);
+        }
+
         // Throttle Key
         $throttleKey = Str::lower($request->email) . '|' . $request->ip();
 
@@ -25,20 +55,9 @@ class AuthController extends Controller
             ], 429);
         }
 
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required|string|min:6'
-        ], [
-            'email.required' => 'This field is required',
-            'email.email' => 'Invalid email',
-            'password.required' => 'This field is required',
-            'password.string' => 'Invalid inputs',
-            'password.min' => 'Password is too short'
-        ]);
-
         $user = User::where('email', $request->email)->first();
 
-        if (! $user || ! Hash::check($request->password, $user->password)) {
+        if (!$user || !Hash::check($request->password, $user->password)) {
             RateLimiter::hit($throttleKey, 60); // Add delay for brute force protection
             return response()->json([
                 'message' => 'Sign in was not successful. Try again later.'
@@ -62,9 +81,9 @@ class AuthController extends Controller
                 'email' => $user->email,
                 'role' => $user->role,
             ],
-            // 'role' => $user->role // Explicitly include role
         ]);
     }
+
 
     public function logout(Request $request)
     {
