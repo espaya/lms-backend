@@ -16,12 +16,18 @@ class AuthController extends Controller
 {
     public function login(Request $request)
     {
-        // Validate inputs including reCAPTCHA token
-        $request->validate([
+        // Validation rules
+        $rules = [
             'email' => 'required|email',
             'password' => 'required|string|min:6',
-            'captcha_token' => 'required|string'
-        ], [
+        ];
+
+        // Only require captcha in non-local environments
+        if (!app()->environment('local')) {
+            $rules['captcha_token'] = 'required|string';
+        }
+
+        $request->validate($rules, [
             'email.required' => 'This field is required',
             'email.email' => 'Invalid email',
             'password.required' => 'This field is required',
@@ -30,19 +36,19 @@ class AuthController extends Controller
             'captcha_token.required' => 'Please complete the captcha'
         ]);
 
-        // 1️⃣ Verify reCAPTCHA with Google
-        $recaptchaResponse = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
-            'secret' => env('RECAPTCHA_SECRET_KEY'),
-            'response' => $request->captcha_token,
-            'remoteip' => $request->ip()
-        ])->json();
+        // ✅ Verify reCAPTCHA only if not in local environment
+        if (!app()->environment('local')) {
+            $recaptchaResponse = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+                'secret' => env('RECAPTCHA_SECRET_KEY'),
+                'response' => $request->captcha_token,
+                'remoteip' => $request->ip()
+            ])->json();
 
-        
-
-        if (!isset($recaptchaResponse['success']) || $recaptchaResponse['success'] !== true) {
-            return response()->json([
-                'message' => 'Captcha verification failed. Please try again.'
-            ], 422);
+            if (!isset($recaptchaResponse['success']) || $recaptchaResponse['success'] !== true) {
+                return response()->json([
+                    'message' => 'Captcha verification failed. Please try again.'
+                ], 422);
+            }
         }
 
         // Throttle Key
