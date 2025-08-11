@@ -403,4 +403,14 @@ class QuestionManagerController extends Controller
             'answers' => $result
         ]);
     }
+
+    public function viewQuestionFile($filename)
+    {
+        $path = storage_path('app/public/questions/' . $filename);
+        if (!file_exists($path)) {
+            abort(404, "File not found");
+        }
+
+        return response()->file($path);
+    }
 }

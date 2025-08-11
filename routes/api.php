@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\Route;
 
 
 Route::post('/login', [AuthController::class, 'login'])->name('login');
+// Route::get('/view-question-file/{filename}', function(){
+//     return "Hello World!";
+// });
 
 // Authenticated API routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -20,6 +23,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/topics/{topic}/questions', [QuestionManagerController::class, 'getQuestions']);
     Route::get('/answers/summary/{topicId}', [QuestionManagerController::class, 'summary']);
     Route::get('/answers/all/{topic}', [QuestionManagerController::class, 'showByTopic']);
+    
 });
 
 Route::middleware(['auth:sanctum', 'admin'])->group(function () {
@@ -41,5 +45,5 @@ Route::middleware(['auth:sanctum', 'user'])->group(function () {
     // Add other API endpoints here;
     Route::post('/answers', [QuestionManagerController::class, 'storeAnswer']);
     Route::post('/user/update-my-profile/{id}', [StudentController::class, 'update']);
-     Route::get('/user/my-profile/{username}', [StudentController::class, 'index']);
+    Route::get('/user/my-profile/{username}', [StudentController::class, 'index']);
 });
