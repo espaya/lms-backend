@@ -12,3 +12,4 @@ use Illuminate\Support\Facades\Route;
 // Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 
 Route::get('/view-question-file/{filename}', [QuestionManagerController::class, 'viewQuestionFile']);
+Route::get('/view-answer-signature/{singature}', [QuestionManagerController::class, 'viewAnswerSignature']);

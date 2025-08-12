@@ -4,11 +4,9 @@ namespace App\Http\Controllers\API\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 
@@ -80,11 +78,11 @@ class AuthController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            'message' => 'Login successful, redirecting...',
+            // 'message' => 'Login successful, redirecting...',
             'token' => $token,
             'user' => [
                 'name' => $user->name,
-                'email' => $user->email,
+                // 'email' => $user->email,
                 'role' => $user->role,
             ],
         ]);

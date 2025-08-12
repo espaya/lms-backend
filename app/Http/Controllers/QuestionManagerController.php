@@ -413,4 +413,33 @@ class QuestionManagerController extends Controller
 
         return response()->file($path);
     }
+
+    public function getReportByTopic($topic)
+    {
+        try 
+        {
+            $report = Answer::with(['user', 'topic'])->where('topic_id', $topic)->get();
+
+            if (!$report) {
+                return response()->json(['message' => 'Report not found!']);
+            }
+
+            return response()->json($report);
+        } 
+        catch (Exception $ex) 
+        {
+            Log::error("Error getting report: " . $ex->getMessage());
+            return response()->json(['message' => 'Error getting report, try again later']);
+        }
+    }
+
+    public function viewAnswerSignature($signature)
+    {
+        $path = storage_path('app/public/signature/' . $signature);
+        if (!file_exists($path)) {
+            abort(404, "File not found");
+        }
+
+        return response()->file($path);
+    }
 }

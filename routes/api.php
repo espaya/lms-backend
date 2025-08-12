@@ -38,6 +38,8 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/users/single/{username}', [UserController::class, 'view']);
     Route::get('/users/single/{username}/quizzes', [UserController::class, 'getUserAnswers']);
     Route::delete('delete-topic-subject-question/{id}', [QuestionManagerController::class, 'destroy']);
+    // get report by topic id
+    Route::get('/get-report-by-topic/{id}', [QuestionManagerController::class, 'getReportByTopic']);
 });
 
 Route::middleware(['auth:sanctum', 'user'])->group(function () {
