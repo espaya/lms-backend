@@ -17,56 +17,69 @@ class UserController extends Controller
 {
     public function store(Request $request)
     {
+        // Validate each user inside the 'users' array
         $request->validate([
-            'name' => ['required', 'unique:users'],
-            'role' => ['required', 'in:USER'],
-            'password' => [
+            'users' => ['required', 'array', 'min:1'],
+            'users.*.name' => ['required', 'unique:users,name'],
+            'users.*.role' => ['required', 'in:USER'],
+            'users.*.password' => [
                 'required',
                 'string',
                 'min:8',
                 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/'
             ],
-            'confirm_password' => ['required', 'same:password'],
-            'privacy' => ['required', 'in:1'],
-            'email' => ['required', 'email', 'unique:users']
+            'users.*.confirm_password' => ['required', 'same:users.*.password'],
+            'users.*.privacy' => ['required', 'in:1'],
+            'users.*.email' => ['required', 'email', 'unique:users,email']
         ], [
-            'name.required' => 'This field is required',
-            'name.unique' => 'You cannot use this username',
-            'role.required' => 'This field is required',
-            'role.in' => 'Invalid role type',
-            'password.required' => 'This field is required',
-            'password.string' => 'Invalid inputs',
-            'password.min' => 'Input is too short',
-            'passowrd.regex' => 'Password must contain at least: 1 uppercase, 1 lowercase, 1 number, and 1 special character',
-            'confirm_password.required' => 'This field is required',
-            'confirm_password.same' => 'Passwords do not match',
-            'privacy.required' => 'Accept our privacy policy',
-            'privacy.in' => 'Unknown privacy input',
-            'email.required' => 'This field is required',
-            'email.email' => 'Invalid input',
-            'email.unique' => 'You cannot use this email',
+            'users.required' => 'You must provide at least one user.',
+            'users.array' => 'Invalid format for users.',
+
+            'users.*.name.required' => 'This field is required',
+            'users.*.name.unique' => 'You cannot use this username',
+
+            'users.*.role.required' => 'This field is required',
+            'users.*.role.in' => 'Invalid role type',
+
+            'users.*.password.required' => 'This field is required',
+            'users.*.password.string' => 'Invalid inputs',
+            'users.*.password.min' => 'Input is too short',
+            'users.*.password.regex' => 'Password must contain at least: 1 uppercase, 1 lowercase, 1 number, and 1 special character',
+
+            'users.*.confirm_password.required' => 'This field is required',
+            'users.*.confirm_password.same' => 'Passwords do not match',
+
+            'users.*.privacy.required' => 'Accept our privacy policy',
+            'users.*.privacy.in' => 'Unknown privacy input',
+
+            'users.*.email.required' => 'This field is required',
+            'users.*.email.email' => 'Invalid email format',
+            'users.*.email.unique' => 'You cannot use this email',
         ]);
 
         DB::beginTransaction();
 
         try {
-            User::create([
-                'name' => trim($request->name),
-                'role' => trim($request->role),
-                'password' => Hash::make($request->password),
-                'privacy' => trim($request->privacy),
-                'email' => trim($request->email)
-            ]);
+            foreach ($request->users as $userData) {
+                User::create([
+                    'name' => trim($userData['name']),
+                    'role' => trim($userData['role']),
+                    'password' => Hash::make($userData['password']),
+                    'privacy' => trim($userData['privacy']),
+                    'email' => trim($userData['email']),
+                ]);
+            }
 
             DB::commit();
 
-            return response()->json(['message' => 'User added successfully'], 200);
+            return response()->json(['message' => 'Users added successfully'], 200);
         } catch (Exception $ex) {
             DB::rollBack();
             Log::error($ex->getMessage());
-            return response()->json(['message' => 'Error adding user, try again later'], 500);
+            return response()->json(['message' => 'Error adding users, try again later'], 500);
         }
     }
+
 
 
     public function updateUser(Request $request, $id)
