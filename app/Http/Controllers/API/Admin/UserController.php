@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\UserAccountEmail;
 use App\Models\Answer;
 use App\Models\User;
 use Exception;
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 
 class UserController extends Controller
@@ -61,14 +63,19 @@ class UserController extends Controller
 
         try {
             foreach ($request->users as $userData) {
-                User::create([
+                $user = User::create([
                     'name' => trim($userData['name']),
                     'role' => trim($userData['role']),
                     'password' => Hash::make($userData['password']),
                     'privacy' => trim($userData['privacy']),
                     'email' => trim($userData['email']),
                 ]);
+
+                // email user after creating their account
+                Mail::to($user->email)->send(new UserAccountEmail($user));
             }
+
+
 
             DB::commit();
 
