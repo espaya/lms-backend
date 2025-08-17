@@ -16,7 +16,7 @@ class AuthController extends Controller
     {
         // Validation rules
         $rules = [
-            'email' => 'required|email',
+            'email' => ['required', 'string'],
             'password' => 'required|string|min:6',
         ];
 
@@ -27,7 +27,7 @@ class AuthController extends Controller
 
         $request->validate($rules, [
             'email.required' => 'This field is required',
-            'email.email' => 'Invalid email',
+            'email.required' => 'Invalid input',
             'password.required' => 'This field is required',
             'password.string' => 'Invalid inputs',
             'password.min' => 'Password is too short',
@@ -59,7 +59,9 @@ class AuthController extends Controller
             ], 429);
         }
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('email', $request->email)
+            ->orWhere('name', $request->email)
+            ->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             RateLimiter::hit($throttleKey, 60); // Add delay for brute force protection
@@ -78,11 +80,9 @@ class AuthController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            // 'message' => 'Login successful, redirecting...',
             'token' => $token,
             'user' => [
                 'name' => $user->name,
-                // 'email' => $user->email,
                 'role' => $user->role,
             ],
         ]);
