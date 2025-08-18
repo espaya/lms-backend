@@ -416,8 +416,7 @@ class QuestionManagerController extends Controller
 
     public function getReportByTopic($topic)
     {
-        try 
-        {
+        try {
             $report = Answer::with(['user', 'topic'])->where('topic_id', $topic)->get();
 
             if (!$report) {
@@ -425,9 +424,7 @@ class QuestionManagerController extends Controller
             }
 
             return response()->json($report);
-        } 
-        catch (Exception $ex) 
-        {
+        } catch (Exception $ex) {
             Log::error("Error getting report: " . $ex->getMessage());
             return response()->json(['message' => 'Error getting report, try again later']);
         }
@@ -441,5 +438,139 @@ class QuestionManagerController extends Controller
         }
 
         return response()->file($path);
+    }
+
+    public function getTopicById($id)
+    {
+        try {
+            $topic = Topic::with(['answers', 'subject', 'questions'])
+                ->where('id', $id)
+                ->get();
+
+            if ($topic->isEmpty()) {
+                return response()->json(['message' => 'No data found'], 404);
+            }
+
+            return response()->json($topic);
+        } catch (Exception $ex) {
+            Log::error($ex->getMessage());
+            return response()->json(['message' => 'Error fetching data, try again later']);
+        }
+    }
+
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'subject' => ['required', 'string'],
+            'topics' => ['required', 'array', 'min:1'],
+            'topics.*' => ['required', 'string'],
+            'questions' => ['required', 'array', 'min:1'],
+            'questions.*.text' => ['required', 'string'],
+            'questions.*.options' => ['required', 'array', 'min:1'],
+            'questions.*.correctIndex' => ['required', 'integer'],
+            'file' => ['nullable', 'file', 'mimes:pdf']
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $findData = Topic::with(['subject', 'questions'])
+                ->where('id', $id)
+                ->first();
+
+            if (!$findData) {
+                return response()->json(['message' => 'Topic not found'], 404);
+            }
+
+            // ✅ Update Subject if changed
+            if ($findData->subject->name !== $request->subject) {
+                $baseSlug = Str::slug($request->subject);
+                $slug = $baseSlug;
+                $counter = 1;
+                while (Subject::where('slug', $slug)->where('id', '!=', $findData->subject->id)->exists()) {
+                    $slug = $baseSlug . '-' . $counter++;
+                }
+
+                $findData->subject->name = trim($request->subject);
+                $findData->subject->slug = $slug;
+
+                if ($findData->subject->isDirty()) {
+                    $findData->subject->save();
+                }
+            }
+
+            // ✅ Update file if uploaded
+            if ($request->hasFile('file')) {
+                $file = $request->file('file');
+                $uploadDir = storage_path('app/public/questions');
+
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0755, true);
+                }
+
+                // Compare using hash (safer than just filename)
+                $newFileHash = md5_file($file->getRealPath());
+
+                $existingFilePath = $uploadDir . '/' . $findData->fileName;
+                $existingFileHash = file_exists($existingFilePath) ? md5_file($existingFilePath) : null;
+
+                if ($newFileHash !== $existingFileHash) {
+                    // Only upload if file content differs
+                    $fileName = time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
+                    $file->move($uploadDir, $fileName);
+
+                    $findData->fileName = $fileName;
+                    $findData->save();
+                }
+            }
+
+            // ✅ Update topics (for simplicity: update current one)
+            if ($findData->name !== $request->topics[0]) {
+                $baseTopicSlug = Str::slug($request->topics[0]);
+                $topicSlug = $baseTopicSlug;
+                $counter = 1;
+                while (Topic::where('slug', $topicSlug)->where('id', '!=', $findData->id)->exists()) {
+                    $topicSlug = $baseTopicSlug . '-' . $counter++;
+                }
+
+                $findData->name = $request->topics[0];
+                $findData->slug = $topicSlug;
+
+                if ($findData->isDirty()) {
+                    $findData->save();
+                }
+            }
+
+            // ✅ Update questions (loop)
+            foreach ($request->questions as $index => $qData) {
+                $question = $findData->questions[$index] ?? null;
+                if (!$question) continue;
+
+                $question->question_text = $qData['text'];
+                $question->options = json_encode($qData['options']);
+                $question->correct_index = $qData['correctIndex'];
+
+                // Slug check
+                $baseQuestionSlug = Str::slug(Str::limit($qData['text'], 50));
+                $slug = $baseQuestionSlug;
+                $counter = 1;
+                while (Question::where('slug', $slug)->where('id', '!=', $question->id)->exists()) {
+                    $slug = $baseQuestionSlug . '-' . $counter++;
+                }
+                $question->slug = $slug;
+
+                if ($question->isDirty()) {
+                    $question->save();
+                }
+            }
+
+            DB::commit();
+
+            return response()->json(['message' => 'Data updated successfully']);
+        } catch (Exception $ex) {
+            DB::rollBack();
+            Log::error("Error updating topic: " . $ex->getMessage());
+            return response()->json(['message' => 'Error updating data'], 500);
+        }
     }
 }
