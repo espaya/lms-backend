@@ -181,7 +181,7 @@ class QuestionManagerController extends Controller
 
             // send email to all users
             $users = User::where('role', 'USER')->get();
-            $fileUrl = asset('storage/questions/' . $fileName);
+            $fileUrl = asset('public/storage/questions/' . $fileName);
             foreach ($users as $user) {
                 Mail::to($user->email)->send(new QuestionUploadMail($user, $fileUrl));
             }
