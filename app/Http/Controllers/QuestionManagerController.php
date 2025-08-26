@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\QuestionUploadMail;
 use App\Models\Answer;
 use App\Models\Question;
 use App\Models\Subject;
 use App\Models\Topic;
+use App\Models\User;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,6 +16,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Mail;
 
 class QuestionManagerController extends Controller
 {
@@ -174,6 +177,13 @@ class QuestionManagerController extends Controller
                         'correct_index'  => $questionData['correctIndex']
                     ]);
                 }
+            }
+
+            // send email to all users
+            $users = User::where('role', 'USER')->get();
+            $fileUrl = asset('storage/questions/' . $fileName);
+            foreach ($users as $user) {
+                Mail::to($user->email)->send(new QuestionUploadMail($user, $fileUrl));
             }
 
             DB::commit();
