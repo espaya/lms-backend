@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\ExportReportController;
 use App\Http\Controllers\API\Auth\AuthController;
 use App\Http\Controllers\QuestionManagerController;
 use App\Http\Controllers\API\Admin\UserController;
@@ -41,6 +42,8 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::delete('delete-topic-subject-question/{id}', [QuestionManagerController::class, 'destroy']);
     // get report by topic id
     Route::get('/get-report-by-topic/{id}', [QuestionManagerController::class, 'getReportByTopic']);
+
+    Route::post('/export-pdf', [ExportReportController::class, 'exportPDF']);
 });
 
 Route::middleware(['auth:sanctum', 'user'])->group(function () {

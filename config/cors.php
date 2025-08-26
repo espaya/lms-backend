@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'paths' => ['api/*', 'sanctum/csrf-cookie'],
+    'paths' => ['api/*', 'sanctum/csrf-cookie', 'storage/*'],
 
     'allowed_methods' => ['*'],
     
@@ -9,6 +9,7 @@ return [
         'http://localhost:3000',
         'https://lmsapi.1staccesshomecareinc.com',
         'https://lms.1staccesshomecareinc.com',
+        '*'
     ],
 
     'allowed_origins_patterns' => [],

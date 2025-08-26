@@ -442,13 +442,20 @@ class QuestionManagerController extends Controller
 
     public function viewAnswerSignature($signature)
     {
-        $path = storage_path('app/public/signature/' . $signature);
+        // Absolute path in storage/app/public/signature
+        $path = public_path('storage/signature/' . $signature);
+
         if (!file_exists($path)) {
             abort(404, "File not found");
         }
 
-        return response()->file($path);
+        return response()->file($path, [
+            'Access-Control-Allow-Origin' => '*',
+            'Access-Control-Allow-Methods' => 'GET, OPTIONS',
+            'Access-Control-Allow-Headers' => 'Content-Type, Authorization',
+        ]);
     }
+
 
     public function getTopicById($id)
     {
