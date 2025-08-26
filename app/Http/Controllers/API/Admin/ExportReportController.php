@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 class ExportReportController extends Controller
 {
     public function exportPDF(Request $request)
-    {
+    { 
         $reports = $request->input('reports', []);
 
         if (!is_array($reports)) {
