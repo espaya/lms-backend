@@ -32,7 +32,14 @@
 </head>
 
 <body>
-    <h2>Quiz Report</h2>
+    <div style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+        <img src="main_logo.png" alt="logo" />
+        <p>info@1staccesshomecareinc.com</br>
+        6600 Fieldtan Trl. Moseley, VA 23120</br>
+        Office Line: 804-818-3216 | Fax: 804-818-2657</p>
+        <h2>Quiz Report</h2>
+    </div>
+
     <table>
         <thead>
             <tr>
