@@ -590,4 +590,22 @@ class QuestionManagerController extends Controller
             return response()->json(['message' => 'Error updating data'], 500);
         }
     }
+    
+    public function isAnswered($topic_id)
+    {
+        $userId = Auth::id();
+
+        try {
+            $isAnswered = Answer::where('topic_id', $topic_id)
+                ->where('user_id', $userId)
+                ->exists();
+
+            Log::info("isAnswered for topic {$topic_id}: " . ($isAnswered ? 'true' : 'false'));
+
+            return response()->json(['answered' => (bool) $isAnswered]);
+        } catch (Exception $ex) {
+            Log::error($ex->getMessage());
+            return response()->json(['message' => 'An unexpected error occurred']);
+        }
+    }
 }

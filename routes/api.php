@@ -52,4 +52,5 @@ Route::middleware(['auth:sanctum', 'user'])->group(function () {
     Route::post('/answers', [QuestionManagerController::class, 'storeAnswer']);
     Route::post('/user/update-my-profile/{id}', [StudentController::class, 'update']);
     Route::get('/user/my-profile/{username}', [StudentController::class, 'index']);
+    Route::get('/user/is-answered/{topic_id}', [QuestionManagerController::class, 'isAnswered']);
 });
