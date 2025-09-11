@@ -27,6 +27,26 @@ class User extends Authenticatable
         'role'
     ];
 
+    public function reference()
+    {
+        return $this->hasOne(Reference::class, 'applicant_id');
+    }
+
+    public function signature()
+    {
+        return $this->hasOne(Signature::class, 'applicant_id');
+    }
+
+    public function applicationForm()
+    {
+        return $this->hasOne(EmploymentApplication::class, 'applicant_id');
+    }
+
+    public function academic()
+    {
+        return $this->hasOne(AcademicTrades::class, 'applicant_id');
+    }
+
 
     /**
      * The attributes that should be hidden for serialization.

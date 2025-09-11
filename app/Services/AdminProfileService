@@ -1,0 +1,33 @@
+<?php
+
+namespace App\Services;
+
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+
+class AdminProfileService
+{
+    public function getAdminProfile()
+    {
+        $adminID = Auth::id();
+        
+        $profile = DB::table('users')->where('adminID', $adminID)->get();
+
+        $adminProfileData = [];
+
+        foreach($profile as $item)
+        {
+            $name = $item->name;
+            $email = $item->email;
+            $password = $item->password;
+
+            $adminProfileData[] = [
+                'name' => $name,
+                'email' => $email,
+                'password' => $password
+            ];
+        }
+
+        return $adminProfileData;
+    }
+}
