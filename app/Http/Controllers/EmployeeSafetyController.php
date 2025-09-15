@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 
 class EmployeeSafetyController extends Controller
 {
@@ -18,7 +19,7 @@ class EmployeeSafetyController extends Controller
 
     public function __construct(UserProfileService $userProfileService)
     {
-        $this->middleware('auth');
+        // $this->middleware('auth');
         $this->userProfileService = $userProfileService;
     }
 
@@ -29,12 +30,12 @@ class EmployeeSafetyController extends Controller
             // profile avatar
             $profileData = $userProfileService->getUserProfileData();
 
-            $empSafety = EmployeeSafety::where('applicant_id', $userID)->get();
+            $empSafety = EmployeeSafety::where('applicant_id', $userID)->first();
 
             return response()->json(
                 [
                     'empSafety' => $empSafety,
-                    'profileData' => $profileData
+                    'profileData' => $profileData->full_name
                 ],
                 200
             );
@@ -74,7 +75,8 @@ class EmployeeSafetyController extends Controller
             $signatureName = time() . '.png';
 
             // Save the signature file to disk using the Storage facade
-            Storage::put('public/signature/' . $signatureName, $signatureBinary);
+            // Storage::put('public/signature/' . $signatureName, $signatureBinary);
+            $singaturePath = storage_path('app/public/signature');
 
             $employeeSafety->signature = $signatureName;
             $employeeSafety->applicant_id = $userID;
@@ -88,6 +90,12 @@ class EmployeeSafetyController extends Controller
             );
 
             DB::commit();
+
+            if (!File::exists($singaturePath)) {
+                File::makeDirectory($singaturePath, 0755, true);
+            }
+
+            Storage::disk('public')->put('signature/' . $signatureName, $signatureBinary);
 
             // refresh page when form is submitted
             return response()->json(['message' => 'Employee Safety Cellular Phone Use Signed Successfully!'], 200);

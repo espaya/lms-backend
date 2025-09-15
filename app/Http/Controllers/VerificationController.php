@@ -27,11 +27,11 @@ class VerificationController extends Controller
         try {
             $profileData = $userProfileService->getUserProfileData();
 
-            $verification = Verification::where('applicant_id', $userID)->get();
+            $verification = Verification::where('applicant_id', $userID)->first();
 
             return response()->json([
                 'verificationData' => $verification,
-                'profileData' => $profileData
+                'profileData' => $profileData->full_name
             ], 200);
         } catch (Exception $ex) {
             Log::error($ex->getMessage());

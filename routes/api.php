@@ -11,9 +11,16 @@ use App\Http\Controllers\ConfidentialityOfInformation;
 use App\Http\Controllers\CriminalHistorySearch;
 use App\Http\Controllers\DisclaimerWaiverLiabilityController;
 use App\Http\Controllers\DrugTestingPolicyController;
+use App\Http\Controllers\EmployeeAgreement;
 use App\Http\Controllers\EmployeeConductController;
 use App\Http\Controllers\EmployeeDressCodeController;
 use App\Http\Controllers\EmployeeOrientationController;
+use App\Http\Controllers\EmployeeReferenceController;
+use App\Http\Controllers\EmployeeSafetyController;
+use App\Http\Controllers\HealthSafetyController;
+use App\Http\Controllers\HomeHealthAideController;
+use App\Http\Controllers\InfectionControlAgreementController;
+use App\Http\Controllers\VerificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -89,4 +96,24 @@ Route::middleware(['auth:sanctum', 'user'])->group(function () {
 
     Route::get('/user/employee-orientation-form/get', [EmployeeOrientationController::class, 'index']);
     Route::post('/user/employee-orientation-form', [EmployeeOrientationController::class, 'store']);
+
+    Route::get('/user/employee-agreement-forms/get', [EmployeeAgreement::class, 'index']);
+    Route::post('/user/employee-agreement-form', [EmployeeAgreement::class, 'store']);
+
+    Route::get('/user/employee-reference-check-forms/get', [EmployeeReferenceController::class, 'index']);
+    Route::post('/user/employee-reference-check-forms', [EmployeeReferenceController::class, 'store']);
+
+    Route::get('/user/employee-safety-cellular-phone-use/get', [EmployeeSafetyController::class, 'index']);
+    Route::post('/user/employee-safety-cellular-phone-use', [EmployeeSafetyController::class, 'store']);
+
+    Route::get('/user/employee-health-safety-forms/get', [HealthSafetyController::class, 'index']);
+    Route::post('/user/employee-health-safety-forms', [HealthSafetyController::class, 'store']);
+
+    Route::get('/user/employee/hha-forms/get', [HomeHealthAideController::class, 'index']);
+    Route::post('/user/employee/hha-forms', [HomeHealthAideController::class, 'store']);
+
+    Route::get('/user/employee-infection-control-forms/get', [InfectionControlAgreementController::class, 'index']);
+    Route::post('/user/employee-infection-control-forms', [InfectionControlAgreementController::class, 'store']);
+
+    // Route::get('/user/verification-of-professional-license', [VerificationController::class, 'index']);
 });

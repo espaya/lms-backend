@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 
 class HomeHealthAideController extends Controller
 {
@@ -27,11 +28,11 @@ class HomeHealthAideController extends Controller
         try {
             $profileData = $userProfileService->getUserProfileData();
 
-            $homeHealth = HomeHealthAide::where('applicant_id', $userID)->get();
+            $homeHealth = HomeHealthAide::where('applicant_id', $userID)->first();
 
-            return view([
+            return response()->json([
                 'homeHealthData' => $homeHealth,
-                'profileData' => $profileData
+                'profileData' => $profileData->full_name
             ], 200);
         } catch (Exception $ex) {
             Log::error($ex->getMessage());
@@ -67,7 +68,8 @@ class HomeHealthAideController extends Controller
             $signatureName = time() . '.png';
 
             // Save the signature file to disk using the Storage facade
-            Storage::put('public/signature/' . $signatureName, $signatureBinary);
+            // Storage::put('public/signature/' . $signatureName, $signatureBinary);
+            $singaturePath = storage_path('app/public/signature');
 
             $homeHealth->signature = $signatureName;
             $homeHealth->applicant_id = $userID;
@@ -80,11 +82,19 @@ class HomeHealthAideController extends Controller
                 ]
             );
 
+            DB::commit();
+
+            if (!File::exists($singaturePath)) {
+                File::makeDirectory($singaturePath, 0755, true);
+            }
+
+            Storage::disk('public')->put('signature/' . $signatureName, $signatureBinary);
+
             return response()->json(['message' => 'Job Description: Home Health Aide Signed Successfully'], 200);
         } catch (Exception $ex) {
             DB::rollBack();
             Log::error($ex->getMessage());
-            return response()->json(['message' => 'An unexpected error occurred']);
+            return response()->json(['message' => 'An unexpected error occurred'], 500);
         }
     }
 }

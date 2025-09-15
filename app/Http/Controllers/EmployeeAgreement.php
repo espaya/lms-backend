@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 
 class EmployeeAgreement extends Controller
 {
@@ -85,7 +86,8 @@ class EmployeeAgreement extends Controller
             $signatureName = time() . '.png';
 
             // Save the signature file to disk using the Storage facade
-            Storage::put('public/signature/' . $signatureName, $signatureBinary);
+            // Storage::put('public/signature/' . $signatureName, $signatureBinary);
+            $singaturePath = storage_path('app/public/signature');
 
             $empAgree->signature = $signatureName;
             $empAgree->applicant_id = $userID;
@@ -119,6 +121,12 @@ class EmployeeAgreement extends Controller
             );
 
             DB::commit();
+
+            if (!File::exists($singaturePath)) {
+                File::makeDirectory($singaturePath, 0755, true);
+            }
+
+            Storage::disk('public')->put('signature/' . $signatureName, $signatureBinary);
 
             return response()->json(['message' => 'Employee Agreement Signed Successfully']);
         } catch (Exception $ex) {

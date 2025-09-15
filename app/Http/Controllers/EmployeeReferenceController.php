@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\EmployeeReferenceCheck;
+use App\Models\Profile;
 use App\Services\UserProfileService;
 use Exception;
 use Illuminate\Http\Request;
@@ -10,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 
 class EmployeeReferenceController extends Controller
 {
@@ -28,16 +30,12 @@ class EmployeeReferenceController extends Controller
         try {
             $profileData = $userProfileService->getUserProfileData();
 
-            // query users_profile table
-            $user_profile = DB::table('users_profile')->where('applicant_id', $userID)->get();
-
             //query employee_reference_check table
-            $empRefCheck = DB::table('employee_reference_check')->where('applicant_id', $userID)->get();
+            $empRefCheck = EmployeeReferenceCheck::where('applicant_id', $userID)->first();
 
             return response()->json([
-                'userProfile' => $user_profile,
-                'empRefChec' => $empRefCheck,
-                'profileData' => $profileData
+                'empRefCheck' => $empRefCheck,
+                'profileData' => $profileData->full_name
             ], 200);
         } catch (Exception $ex) {
             Log::error($ex->getMessage());
@@ -112,13 +110,7 @@ class EmployeeReferenceController extends Controller
             $companySignatureName = time() . '_company.png';
 
             // Save the signature file
-            Storage::put('public/signature/' . $signatureName, $signatureBinary);
-
-            // Save the repSignature file
-            Storage::put('public/signature/' . $repSignatureName, $repSignatureBinary);
-
-            // save company contacted signature file
-            Storage::put('public/signature/' . $companySignatureName, $companySignatureBinary);
+            $singaturePath = storage_path('app/public/signature');
 
             $empRef->applicant_id = $userID;
             $empRef->company_contacted = $request->company_contacted;
@@ -155,7 +147,15 @@ class EmployeeReferenceController extends Controller
 
             DB::commit();
 
-            return response()->json(['success' => 'Employee Reference Check Signed Successfully']);
+            if (!File::exists($singaturePath)) {
+                File::makeDirectory($singaturePath, 0755, true);
+            }
+
+            Storage::disk('public')->put('signature/' . $signatureName, $signatureBinary);
+            Storage::disk('public')->put('signature/' . $repSignatureName, $repSignatureBinary);
+            Storage::disk('public')->put('signature/' . $companySignatureName, $companySignatureBinary);
+
+            return response()->json(['message' => 'Employee Reference Check Signed Successfully']);
         } catch (Exception $ex) {
             DB::rollBack();
             Log::error($ex->getMessage());

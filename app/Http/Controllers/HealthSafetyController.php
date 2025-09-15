@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\InfectionControlAgreement;
+use App\Models\HealthSafetyAgreement;
 use App\Services\UserProfileService;
 use Exception;
 use Illuminate\Http\Request;
@@ -10,8 +10,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 
-class InfectionControlAgreementController extends Controller
+class HealthSafetyController extends Controller
 {
     protected $userProfileService;
 
@@ -27,11 +28,11 @@ class InfectionControlAgreementController extends Controller
         try {
             $profileData = $userProfileService->getUserProfileData();
 
-            $infection = InfectionControlAgreement::where('applicant_id', $userID)->get();
+            $health = HealthSafetyAgreement::where('applicant_id', $userID)->first();
 
             return response()->json([
-                'infectionData' => $infection,
-                'profileData' => $profileData
+                'healthData' => $health,
+                'profileData' => $profileData->full_name
             ], 200);
         } catch (Exception $ex) {
             Log::error($ex->getMessage());
@@ -45,14 +46,12 @@ class InfectionControlAgreementController extends Controller
 
         $request->validate([
             'signature' => 'required'
-        ], [
-            'signature.required' => 'This field is required'
         ]);
 
         DB::beginTransaction();
 
         try {
-            $infection = new InfectionControlAgreement();
+            $health = new HealthSafetyAgreement();
 
             // get signature input
             $signatureData = $request->input('signature');
@@ -66,12 +65,13 @@ class InfectionControlAgreementController extends Controller
             $signatureName = time() . '.png';
 
             // Save the signature file to disk using the Storage facade
-            Storage::put('public/signature/' . $signatureName, $signatureBinary);
+            // Storage::put('public/signature/' . $signatureName, $signatureBinary);
+            $singaturePath = storage_path('app/public/signature');
 
-            $infection->signature = $signatureName;
-            $infection->applicant_id = $userID;
+            $health->signature = $signatureName;
+            $health->applicant_id = $userID;
 
-            InfectionControlAgreement::firstOrCreate(
+            HealthSafetyAgreement::firstOrCreate(
                 ['applicant_id' => $userID],
                 [
                     'signature' => $signatureName,
@@ -80,7 +80,14 @@ class InfectionControlAgreementController extends Controller
             );
 
             DB::commit();
-            return response()->json(['success' => 'Following Infection Control Agreement Signed Successfully'], 200);
+
+            if (!File::exists($singaturePath)) {
+                File::makeDirectory($singaturePath, 0755, true);
+            }
+
+            Storage::disk('public')->put('signature/' . $signatureName, $signatureBinary);
+
+            return response()->json(['message' => 'Health Safety Agreement Signed Successfully'], 200);
         } catch (Exception $ex) {
             DB::rollBack();
             Log::error($ex->getMessage());
