@@ -2,8 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Profile;
-use App\Models\Reporting;
+use App\Models\NonCompeteAgreement;
 use App\Services\UserProfileService;
 use Exception;
 use Illuminate\Http\Request;
@@ -11,8 +10,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 
-class ReportingController extends Controller
+class NonCompeteAgreementController extends Controller
 {
     protected $userProfileService;
 
@@ -24,16 +24,14 @@ class ReportingController extends Controller
     public function index(UserProfileService $userProfileService)
     {
         $userID = Auth::id();
-
         try {
             $profileData = $userProfileService->getUserProfileData();
-            $fName = Profile::where('applicant_id', $userID)->get();
-            $reporting = Reporting::where('applicant_id', $userID)->get();
+
+            $nonCompete = NonCompeteAgreement::where('applicant_id', $userID)->first();
 
             return response()->json([
-                'fNameData' => $fName,
-                'reportingData' => $reporting,
-                'profileData' => $profileData
+                'nonCompete' => $nonCompete,
+                'profileData' => $profileData->full_name,
             ], 200);
         } catch (Exception $ex) {
             Log::error($ex->getMessage());
@@ -48,13 +46,13 @@ class ReportingController extends Controller
         $request->validate([
             'signature' => 'required'
         ], [
-            'signature.required' => 'This field is required'
+            'signature.required' => 'This field is required',
         ]);
 
         DB::beginTransaction();
 
         try {
-            $reporting = new Reporting();
+            $compete = new NonCompeteAgreement();
 
             // get signature input
             $signatureData = $request->input('signature');
@@ -68,12 +66,13 @@ class ReportingController extends Controller
             $signatureName = time() . '.png';
 
             // Save the signature file to disk using the Storage facade
-            Storage::put('public/signature/' . $signatureName, $signatureBinary);
+            // Storage::put('public/signature/' . $signatureName, $signatureBinary);
+            $singaturePath = storage_path('app/public/signature');
 
-            $reporting->signature = $signatureName;
-            $reporting->applicant_id = $userID;
+            $compete->signature = $signatureName;
+            $compete->applicant_id = $userID;
 
-            Reporting::firstOrCreate(
+            NonCompeteAgreement::firstOrCreate(
                 ['applicant_id' => $userID],
                 [
                     'signature' => $signatureName,
@@ -83,7 +82,13 @@ class ReportingController extends Controller
 
             DB::commit();
 
-            return response()->json(['success' => 'Reporting: Abuse/Neglect/Exploitation Signed Successfully'], 200);
+            if (!File::exists($singaturePath)) {
+                File::makeDirectory($singaturePath, 0755, true);
+            }
+
+            Storage::disk('public')->put('signature/' . $signatureName, $signatureBinary);
+
+            return response()->json(['message' => 'Non-Compete Agreement Signed Successfully'], 200);
         } catch (Exception $ex) {
             DB::rollBack();
             Log::error($ex->getMessage());

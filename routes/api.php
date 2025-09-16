@@ -20,6 +20,11 @@ use App\Http\Controllers\EmployeeSafetyController;
 use App\Http\Controllers\HealthSafetyController;
 use App\Http\Controllers\HomeHealthAideController;
 use App\Http\Controllers\InfectionControlAgreementController;
+use App\Http\Controllers\NonCompeteAgreementController;
+use App\Http\Controllers\PoliciesAndProceduresController;
+use App\Http\Controllers\ReportingController;
+use App\Http\Controllers\SexualHarassmentController;
+use App\Http\Controllers\SmokingInTheWorkplace;
 use App\Http\Controllers\VerificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -114,6 +119,21 @@ Route::middleware(['auth:sanctum', 'user'])->group(function () {
 
     Route::get('/user/employee-infection-control-forms/get', [InfectionControlAgreementController::class, 'index']);
     Route::post('/user/employee-infection-control-forms', [InfectionControlAgreementController::class, 'store']);
+
+    Route::get('/user/non-compete-agreement-forms/get', [NonCompeteAgreementController::class, 'index']);
+    Route::post('/user/non-compete-agreement-forms', [NonCompeteAgreementController::class, 'store']);
+
+    Route::get('/user/policy-and-procedure-forms/get', [PoliciesAndProceduresController::class, 'index']);
+    Route::post('/user/policy-and-procedure-forms', [PoliciesAndProceduresController::class, 'store']);
+
+    Route::get('/user/reporting-abuse-neglect-exploitation-forms/get', [ReportingController::class, 'index']);
+    Route::post('/user/reporting-abuse-neglect-exploitation-forms', [ReportingController::class, 'store']);
+
+    Route::get('/user/sexual-harassment-forms/get', [SexualHarassmentController::class, 'index']);
+    Route::post('/user/sexual-harassment-forms', [SexualHarassmentController::class, 'store']);
+
+    Route::get('/user/smoking-in-the-workplace-forms/get', [SmokingInTheWorkplace::class, 'index']);
+    Route::post('/user/smoking-in-the-workplace-forms', [SmokingInTheWorkplace::class, 'store']);
 
     // Route::get('/user/verification-of-professional-license', [VerificationController::class, 'index']);
 });

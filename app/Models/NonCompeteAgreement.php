@@ -13,7 +13,8 @@ class NonCompeteAgreement extends Model
 
     protected $fillable = [
         'applicant_id',
-        'signature'
+        'signature',
+        'agency_rep_signature'
     ];
 
 }

@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\PolicyAndProcedure;
+use App\Models\Profile;
+use App\Models\SexualHarassment;
 use App\Services\UserProfileService;
 use Exception;
 use Illuminate\Http\Request;
@@ -10,8 +11,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 
-class PoliciesAndProceduresController extends Controller
+class SexualHarassmentController extends Controller
 {
     protected $userProfileService;
 
@@ -23,15 +25,13 @@ class PoliciesAndProceduresController extends Controller
     public function index(UserProfileService $userProfileService)
     {
         $userID = Auth::id();
-
         try {
             $profileData = $userProfileService->getUserProfileData();
-
-            $policy = PolicyAndProcedure::where('applicant_id', $userID)->get();
+            $sexual = SexualHarassment::where('applicant_id', $userID)->first();
 
             return response()->json([
-                'policy' => $policy,
-                'profileData' => $profileData
+                'sexualData' => $sexual,
+                'profileData' => $profileData->full_name
             ], 200);
         } catch (Exception $ex) {
             Log::error($ex->getMessage());
@@ -42,17 +42,16 @@ class PoliciesAndProceduresController extends Controller
     public function store(Request $request)
     {
         $userID = Auth::id();
-
         $request->validate([
             'signature' => 'required'
         ], [
-            'signature.required' => 'This field is required'
+            'signature.required' => 'This field is required',
         ]);
 
         DB::beginTransaction();
 
         try {
-            $policy = new PolicyAndProcedure();
+            $sexual = new SexualHarassment();
 
             // get signature input
             $signatureData = $request->input('signature');
@@ -66,12 +65,13 @@ class PoliciesAndProceduresController extends Controller
             $signatureName = time() . '.png';
 
             // Save the signature file to disk using the Storage facade
-            Storage::put('public/signature/' . $signatureName, $signatureBinary);
+            // Storage::put('public/signature/' . $signatureName, $signatureBinary);
+            $singaturePath = storage_path('app/public/signature');
 
-            $policy->signature = $signatureName;
-            $policy->applicant_id = $userID;
+            $sexual->signature = $signatureName;
+            $sexual->applicant_id = $userID;
 
-            PolicyAndProcedure::firstOrCreate(
+            SexualHarassment::firstOrCreate(
                 ['applicant_id' => $userID],
                 [
                     'signature' => $signatureName,
@@ -81,9 +81,14 @@ class PoliciesAndProceduresController extends Controller
 
             DB::commit();
 
-            return response()->json(['message' => 'Policies and Procedures Orientation Acknowledgement']);
+            if (!File::exists($singaturePath)) {
+                File::makeDirectory($singaturePath, 0755, true);
+            }
+
+            Storage::disk('public')->put('signature/' . $signatureName, $signatureBinary);
+
+            return response()->json(['message' => 'Sexual Harassment Signed Successfully'], 200);
         } catch (Exception $ex) {
-            DB::rollBack();
             Log::error($ex->getMessage());
             return response()->json(['message' => 'An unexpected error occurred'], 500);
         }

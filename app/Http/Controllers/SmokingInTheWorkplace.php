@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\NonCompeteAgreement;
+use App\Models\EmploymentApplication;
+use App\Models\Profile;
+use App\Models\Smoking;
 use App\Services\UserProfileService;
 use Exception;
 use Illuminate\Http\Request;
@@ -10,8 +12,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 
-class NonCompeteAgreementController extends Controller
+class SmokingInTheWorkplace extends Controller
 {
     protected $userProfileService;
 
@@ -23,14 +26,15 @@ class NonCompeteAgreementController extends Controller
     public function index(UserProfileService $userProfileService)
     {
         $userID = Auth::id();
+
         try {
             $profileData = $userProfileService->getUserProfileData();
 
-            $non_compete = NonCompeteAgreement::where('applicant_id', $userID)->get();
+            $smoking = Smoking::where('applicant_id', $userID)->first();
 
             return response()->json([
-                'non_compete' => $non_compete,
-                'profileData' => $profileData
+                'smoking' => $smoking,
+                'profileData' => $profileData->full_name
             ], 200);
         } catch (Exception $ex) {
             Log::error($ex->getMessage());
@@ -45,13 +49,13 @@ class NonCompeteAgreementController extends Controller
         $request->validate([
             'signature' => 'required'
         ], [
-            'signature.required' => 'This field is required',
+            'signature.required' => 'This field is required'
         ]);
 
         DB::beginTransaction();
 
         try {
-            $compete = new NonCompeteAgreement();
+            $workplace = new Smoking();
 
             // get signature input
             $signatureData = $request->input('signature');
@@ -65,12 +69,13 @@ class NonCompeteAgreementController extends Controller
             $signatureName = time() . '.png';
 
             // Save the signature file to disk using the Storage facade
-            Storage::put('public/signature/' . $signatureName, $signatureBinary);
+            // Storage::put('public/signature/' . $signatureName, $signatureBinary);
+            $singaturePath = storage_path('app/public/signature');
 
-            $compete->signature = $signatureName;
-            $compete->applicant_id = $userID;
+            $workplace->signature = $signatureName;
+            $workplace->applicant_id = $userID;
 
-            NonCompeteAgreement::firstOrCreate(
+            Smoking::firstOrCreate(
                 ['applicant_id' => $userID],
                 [
                     'signature' => $signatureName,
@@ -80,7 +85,13 @@ class NonCompeteAgreementController extends Controller
 
             DB::commit();
 
-            return response()->json(['success' => 'Non-Compete Agreement Signed Successfully'], 200);
+            if (!File::exists($singaturePath)) {
+                File::makeDirectory($singaturePath, 0755, true);
+            }
+
+            Storage::disk('public')->put('signature/' . $signatureName, $signatureBinary);
+
+            return response()->json(['message' => 'Supervisor\'s Signature Added Successfully'], 200);
         } catch (Exception $ex) {
             DB::rollBack();
             Log::error($ex->getMessage());

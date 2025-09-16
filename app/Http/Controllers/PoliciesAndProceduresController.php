@@ -2,9 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\EmploymentApplication;
-use App\Models\Profile;
-use App\Models\Smoking;
+use App\Models\PolicyAndProcedure;
 use App\Services\UserProfileService;
 use Exception;
 use Illuminate\Http\Request;
@@ -12,8 +10,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 
-class SmokingInTheWorkplace extends Controller
+class PoliciesAndProceduresController extends Controller
 {
     protected $userProfileService;
 
@@ -29,19 +28,11 @@ class SmokingInTheWorkplace extends Controller
         try {
             $profileData = $userProfileService->getUserProfileData();
 
-            $smoking = Smoking::where('applicant_id', $userID)->get();
-
-            // get employee full name
-            $fullName = Profile::where('applicant_id', $userID)->get();
-
-            // get employee hire date
-            $hireDate = EmploymentApplication::where('applicant_id', $userID)->get();
+            $policy = PolicyAndProcedure::where('applicant_id', $userID)->first();
 
             return response()->json([
-                'smoking' => $smoking,
-                'fullName' => $fullName,
-                'hireDate' => $hireDate,
-                'profileData' => $profileData
+                'policy' => $policy,
+                'profileData' => $profileData->full_name,
             ], 200);
         } catch (Exception $ex) {
             Log::error($ex->getMessage());
@@ -62,7 +53,7 @@ class SmokingInTheWorkplace extends Controller
         DB::beginTransaction();
 
         try {
-            $workplace = new Smoking();
+            $policy = new PolicyAndProcedure();
 
             // get signature input
             $signatureData = $request->input('signature');
@@ -76,12 +67,14 @@ class SmokingInTheWorkplace extends Controller
             $signatureName = time() . '.png';
 
             // Save the signature file to disk using the Storage facade
-            Storage::put('public/signature/' . $signatureName, $signatureBinary);
+            // Storage::put('public/signature/' . $signatureName, $signatureBinary);
 
-            $workplace->signature = $signatureName;
-            $workplace->applicant_id = $userID;
+            $singaturePath = storage_path('app/public/signature');
 
-            Smoking::firstOrCreate(
+            $policy->signature = $signatureName;
+            $policy->applicant_id = $userID;
+
+            PolicyAndProcedure::firstOrCreate(
                 ['applicant_id' => $userID],
                 [
                     'signature' => $signatureName,
@@ -91,7 +84,13 @@ class SmokingInTheWorkplace extends Controller
 
             DB::commit();
 
-            return redirect()->back()->with('success', 'Supervisor\'s Signature Added Successfully');
+            if (!File::exists($singaturePath)) {
+                File::makeDirectory($singaturePath, 0755, true);
+            }
+
+            Storage::disk('public')->put('signature/' . $signatureName, $signatureBinary);
+
+            return response()->json(['message' => 'Policies and Procedures Orientation Acknowledgement']);
         } catch (Exception $ex) {
             DB::rollBack();
             Log::error($ex->getMessage());
