@@ -87,79 +87,81 @@ class EmployeeReferenceController extends Controller
         try {
             $empRef = new EmployeeReferenceCheck();
 
-            // get signature input
+            // Process applicant signature (always required)
             $signatureData = $request->input('signature');
-            $repSignatureData = $request->input('rep_signature');
-            $companySignatureData = $request->input('company_signature');
-
             $signatureParts = explode(',', $signatureData);
-            $repSignatureParts = explode(',', $repSignatureData);
-            $companySignatureParts = explode(',', $companySignatureData);
-
-            $signatureEncoded = $signatureParts[1]; // Extract the base64-encoded part
-            $repSignatureEncoded = $repSignatureParts[1]; // Extract the base64-encoded part
-            $companySignatureEncoded = $companySignatureParts[1]; // extract the base64-encoded part
-
+            $signatureEncoded = $signatureParts[1] ?? '';
             $signatureBinary = base64_decode($signatureEncoded);
-            $repSignatureBinary = base64_decode($repSignatureEncoded);
-            $companySignatureBinary = base64_decode($companySignatureEncoded);
-
-            // Generate a unique filename for the signature file
             $signatureName = time() . '.png';
+
+            // Process representative signature (always required)
+            $repSignatureData = $request->input('rep_signature');
+            $repSignatureParts = explode(',', $repSignatureData);
+            $repSignatureEncoded = $repSignatureParts[1] ?? '';
+            $repSignatureBinary = base64_decode($repSignatureEncoded);
             $repSignatureName = time() . '_rep.png';
-            $companySignatureName = time() . '_company.png';
 
-            // Save the signature file
-            $singaturePath = storage_path('app/public/signature');
+            // Process company signature (conditional)
+            $companySignatureName = null;
+            $companySignatureBinary = null;
 
-            $empRef->applicant_id = $userID;
-            $empRef->company_contacted = $request->company_contacted;
-            $empRef->employer_name = $request->employer_name;
-            $empRef->from_date = $request->from_date;
-            $empRef->to_date = $request->to_date;
-            $empRef->eligible_for_hire = $request->eligible_for_hire;
-            $empRef->comments = $request->comments;
-            $empRef->received_by = $request->received_by;
-            $empRef->name_of_company = $request->name_of_company;
-            $empRef->signature = $signatureName;
-            $empRef->rep_signature = $repSignatureName;
-            $empRef->company_signature = $companySignatureName;
-            $empRef->rep_title = $request->rep_title;
+            if ($request->filled('company_signature')) {
+                $companySignatureData = $request->input('company_signature');
+                $companySignatureParts = explode(',', $companySignatureData);
 
+                // Check if the signature data is valid (has at least 2 parts)
+                if (count($companySignatureParts) >= 2) {
+                    $companySignatureEncoded = $companySignatureParts[1];
+                    $companySignatureBinary = base64_decode($companySignatureEncoded);
+                    $companySignatureName = time() . '_company.png';
+                }
+            }
+
+            // Prepare data for creation
+            $empRefData = [
+                'applicant_id' => $userID,
+                'company_contacted' => $request->company_contacted,
+                'employer_name' => $request->employer_name,
+                'from_date' => $request->from_date,
+                'to_date' => $request->to_date,
+                'eligible_for_hire' => $request->eligible_for_hire,
+                'comments' => $request->comments,
+                'received_by' => $request->received_by,
+                'name_of_company' => $request->name_of_company,
+                'signature' => $signatureName,
+                'rep_signature' => $repSignatureName,
+                'rep_title' => $request->rep_title,
+                'company_signature' => $companySignatureName,
+            ];
+
+            // Create or update the record
             EmployeeReferenceCheck::firstOrCreate(
                 ['applicant_id' => $userID],
-                [
-                    'applicant_id' => $userID,
-                    'company_contacted' => $request->company_contacted,
-                    'employer_name' => $request->employer_name,
-                    'from_date' => $request->from_date,
-                    'to_date' => $request->to_date,
-                    'eligible_for_hire' => $request->eligible_for_hire,
-                    'comments' => $request->comments,
-                    'received_by' => $request->received_by,
-                    'name_of_company' => $request->name_of_company,
-                    'signature' => $signatureName,
-                    'rep_signature' => $repSignatureName,
-                    'company_signature' => $companySignatureName,
-                    'rep_title' => $request->rep_title
-                ]
+                $empRefData
             );
+
+            // Create directory if it doesn't exist
+            $signaturePath = storage_path('app/public/signature');
+            if (!File::exists($signaturePath)) {
+                File::makeDirectory($signaturePath, 0755, true);
+            }
 
             DB::commit();
 
-            if (!File::exists($singaturePath)) {
-                File::makeDirectory($singaturePath, 0755, true);
-            }
-
+            // Save signature files
             Storage::disk('public')->put('signature/' . $signatureName, $signatureBinary);
             Storage::disk('public')->put('signature/' . $repSignatureName, $repSignatureBinary);
-            Storage::disk('public')->put('signature/' . $companySignatureName, $companySignatureBinary);
+
+            // Only save company signature if it exists
+            if ($companySignatureBinary && $companySignatureName) {
+                Storage::disk('public')->put('signature/' . $companySignatureName, $companySignatureBinary);
+            }
 
             return response()->json(['message' => 'Employee Reference Check Signed Successfully']);
         } catch (Exception $ex) {
             DB::rollBack();
-            Log::error($ex->getMessage());
+            Log::error($ex->getMessage() . ' on line ' . $ex->getLine());
             return response()->json(['message' => 'An unexpected error occurred'], 500);
         }
-    }
+    } 
 }

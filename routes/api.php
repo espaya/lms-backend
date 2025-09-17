@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\API\Admin\AdminFormsController;
 use App\Http\Controllers\Api\Admin\ExportReportController;
 use App\Http\Controllers\API\Auth\AuthController;
 use App\Http\Controllers\QuestionManagerController;
@@ -66,6 +67,9 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/get-report-by-topic/{id}', [QuestionManagerController::class, 'getReportByTopic']);
 
     Route::post('/export-pdf', [ExportReportController::class, 'exportPDF']);
+
+    Route::get('/admin/dashboard/all-forms/{username}', [AdminFormsController::class, 'index']);
+
 });
 
 Route::middleware(['auth:sanctum', 'user'])->group(function () {
