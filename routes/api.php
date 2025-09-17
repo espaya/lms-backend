@@ -25,6 +25,8 @@ use App\Http\Controllers\PoliciesAndProceduresController;
 use App\Http\Controllers\ReportingController;
 use App\Http\Controllers\SexualHarassmentController;
 use App\Http\Controllers\SmokingInTheWorkplace;
+use App\Http\Controllers\SwornDisclosureController;
+use App\Http\Controllers\UniversalPrecautionsController;
 use App\Http\Controllers\VerificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -134,6 +136,15 @@ Route::middleware(['auth:sanctum', 'user'])->group(function () {
 
     Route::get('/user/smoking-in-the-workplace-forms/get', [SmokingInTheWorkplace::class, 'index']);
     Route::post('/user/smoking-in-the-workplace-forms', [SmokingInTheWorkplace::class, 'store']);
+
+    Route::get('/user/sworn-disclosure-forms/get', [SwornDisclosureController::class, 'index']);
+    Route::post('/user/sworn-disclosure-forms', [SwornDisclosureController::class, 'store']);
+
+    Route::get('user/universal-precautions-forms/get', [UniversalPrecautionsController::class, 'index']);
+    Route::post('user/universal-precautions-forms', [UniversalPrecautionsController::class, 'store']);
+
+    Route::get('/user/verification-of-professional-license-forms/get', [VerificationController::class, 'index']);
+    Route::post('/user/verification-of-professional-license-forms', [VerificationController::class, 'store']);
 
     // Route::get('/user/verification-of-professional-license', [VerificationController::class, 'index']);
 });

@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 
 class UniversalPrecautionsController extends Controller
 {
@@ -28,14 +29,11 @@ class UniversalPrecautionsController extends Controller
         try {
             $profileData = $userProfileService->getUserProfileData();
 
-            $precautions = UniversalPrecautions::where('applicant_id', $userID)->get();
-
-            $name = Profile::where('applicant_id', $userID)->get();
+            $precautions = UniversalPrecautions::where('applicant_id', $userID)->first();
 
             return response()->json([
                 'precautionsData' => $precautions,
-                'nameData' => $name,
-                'profileData' => $profileData
+                'profileData' => $profileData->full_name
             ], 200);
         } catch (Exception $ex) {
             Log::error($ex->getMessage());
@@ -70,7 +68,8 @@ class UniversalPrecautionsController extends Controller
             $signatureName = time() . '.png';
 
             // Save the signature file to disk using the Storage facade
-            Storage::put('public/signature/' . $signatureName, $signatureBinary);
+            // Storage::put('public/signature/' . $signatureName, $signatureBinary);
+            $singaturePath = storage_path('app/public/signature');
 
             $universal->signature = $signatureName;
             $universal->applicant_id = $userID;
@@ -85,9 +84,14 @@ class UniversalPrecautionsController extends Controller
 
             DB::commit();
 
-            return response()->json(['success' => 'Universal Precautions Training Document Signed Successfully'], 200);
-        } catch (Exception $ex) 
-        {
+            if (!File::exists($singaturePath)) {
+                File::makeDirectory($singaturePath, 0755, true);
+            }
+
+            Storage::disk('public')->put('signature/' . $signatureName, $signatureBinary);
+
+            return response()->json(['message' => 'Universal Precautions Training Document Signed Successfully'], 200);
+        } catch (Exception $ex) {
             DB::rollBack();
             Log::error($ex->getMessage());
             return response()->json(['messsage' => 'An unexpected error occurred'], 500);

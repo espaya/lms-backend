@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 
 class SwornDisclosureController extends Controller
 {
@@ -27,13 +28,13 @@ class SwornDisclosureController extends Controller
 
         try {
             $profileData = $userProfileService->getUserProfileData();
-            $postion = EmploymentApplication::where('applicant_id', $userID)->get();
-            $sworn = SwornDisclosure::where('applicant_id', $userID)->get();
+            $postion = EmploymentApplication::where('applicant_id', $userID)->first();
+            $sworn = SwornDisclosure::where('applicant_id', $userID)->first();
 
             return response()->json([
-                'position' => $postion,
+                'position' => $postion->position,
                 'sworn' => $sworn,
-                'profileData' => $profileData
+                'profileData' => $profileData->full_name
             ], 200);
         } catch (Exception $ex) {
             Log::error($ex->getMessage());
@@ -85,8 +86,8 @@ class SwornDisclosureController extends Controller
             $witSignatureName = time() . '_.png';
 
             // Save the signature file to disk using the Storage facade
-            Storage::put('public/signature/' . $signatureName, $signatureBinary);
-            Storage::put('public/signature/' . $witSignatureName, $witSignatureBinary);
+            $singaturePath = storage_path('app/public/signature');
+
 
             $swornDisclosure->applicant_id = $userID;
             $swornDisclosure->mailing_address = $request->mailing_address;
@@ -114,6 +115,13 @@ class SwornDisclosureController extends Controller
             );
 
             DB::commit();
+
+            if (!File::exists($singaturePath)) {
+                File::makeDirectory($singaturePath, 0755, true);
+            }
+
+            Storage::disk('public')->put('signature/' . $signatureName, $signatureBinary);
+            Storage::disk('public')->put('signature/' . $witSignatureName, $witSignatureBinary);
 
             return response()->json(['message' => 'Sworn Disclosure Statement Signed Successfully']);
         } catch (Exception $ex) {

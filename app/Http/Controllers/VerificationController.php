@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 
 class VerificationController extends Controller
 {
@@ -52,6 +53,15 @@ class VerificationController extends Controller
             'actionOutstanding' => 'required',
             'comments' => 'required',
             'signature' => 'required'
+        ], [
+            'disciplines.required_without_all' => 'Check at least on discipline',
+            'licenseNumber.required' => 'This field is required',
+            'expirationDate.required' => 'This field is required',
+            'dateVerified.required' => 'This field is required',
+            'licenseVerifiedBy.required' => 'This field is required',
+            'actionOutstanding.required' => 'This field is required',
+            'comments.required' => 'This field is required',
+            'signature.required' => 'This field is required',
         ]);
 
         DB::beginTransaction();
@@ -71,7 +81,8 @@ class VerificationController extends Controller
             $signatureName = time() . '.png';
 
             // Save the signature file to disk using the Storage facade
-            Storage::put('public/signature/' . $signatureName, $signatureBinary);
+            // Storage::put('public/signature/' . $signatureName, $signatureBinary);
+            $singaturePath = storage_path('app/public/signature');
 
             $verification->signature = $signatureName;
             $verification->applicant_id = $userID;
@@ -100,7 +111,13 @@ class VerificationController extends Controller
 
             DB::commit();
 
-            return response()->json(['success' => 'Verification of Professional License']);
+            if (!File::exists($singaturePath)) {
+                File::makeDirectory($singaturePath, 0755, true);
+            }
+
+            Storage::disk('public')->put('signature/' . $signatureName, $signatureBinary);
+
+            return response()->json(['message' => 'Verification of Professional License']);
         } catch (Exception $ex) {
             DB::rollBack();
             Log::error($ex->getMessage());
