@@ -27,24 +27,15 @@ class User extends Authenticatable
         'role'
     ];
 
-    public function reference()
-    {
-        return $this->hasOne(Reference::class, 'applicant_id');
-    }
-
-    public function signature()
-    {
-        return $this->hasOne(Signature::class, 'applicant_id');
-    }
 
     public function applicationForm()
     {
         return $this->hasOne(EmploymentApplication::class, 'applicant_id');
     }
 
-    public function academic()
+    public function verification()
     {
-        return $this->hasOne(AcademicTrades::class, 'applicant_id');
+        return $this->hasOne(Verification::class, 'applicant_id');
     }
 
     public function attendanceTardiness()

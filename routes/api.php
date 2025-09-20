@@ -70,6 +70,7 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
 
     Route::get('/admin/dashboard/all-forms/{username}', [AdminFormsController::class, 'index']);
 
+
 });
 
 Route::middleware(['auth:sanctum', 'user'])->group(function () {

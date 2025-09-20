@@ -18,4 +18,9 @@ class Emergency extends Model
         'emergency_zip',
         'applicant_id'
     ];
+
+    public function application()
+    {
+        return $this->belongsTo(EmploymentApplication::class, 'applicant_id', 'applicant_id');
+    }
 }

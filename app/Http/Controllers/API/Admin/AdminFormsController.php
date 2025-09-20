@@ -22,8 +22,15 @@ class AdminFormsController extends Controller
             }
 
             $forms = User::with([
-                'reference',
-                'applicationForm',
+                'applicationForm.emergencyAddress',
+                'applicationForm.presentAddress',
+                'applicationForm.permanentAddress',
+                'applicationForm.pastEmpInfo',
+                'applicationForm.language',
+                'applicationForm.academic',
+                'applicationForm.reference',
+                'applicationForm.signature',
+                'applicationForm.profile',
                 'attendanceTardiness',
                 'confidentialityInformation',
                 'criminalHistorySearch',
@@ -44,8 +51,10 @@ class AdminFormsController extends Controller
                 'sexualHarassment',
                 'smoking',
                 'swornDisclosure',
-                'universalPrecaution'
+                'universalPrecaution',
+                'verification'
             ])->where('name', $username)->first();
+
 
             $cachedKey = 'user_forms_' . $username;
             $cachedForms = Cache::remember($cachedKey, 3600, function () use ($forms) {

@@ -17,4 +17,5 @@ class Profile extends Model
         'user_avatar',
         'applicant_id'
     ];
+
 }

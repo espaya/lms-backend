@@ -16,6 +16,51 @@ class EmploymentApplication extends Model
         return $this->belongsTo(User::class, 'applicant_id');
     }
 
+    public function emergencyAddress()
+    {
+        return $this->hasOne(Emergency::class, 'applicant_id', 'applicant_id');
+    }
+
+    public function presentAddress()
+    {
+        return $this->hasOne(PresentAdrress::class, 'applicant_id', 'applicant_id');
+    }
+
+    public function permanentAddress()
+    {
+        return $this->hasOne(PremanentAddress::class, 'applicant_id', 'applicant_id');
+    }
+
+    public function pastEmpInfo()
+    {
+        return $this->hasOne(PastEmpInfo::class, 'applicant_id', 'applicant_id');
+    }
+
+    public function language()
+    {
+        return $this->hasOne(Language::class, "applicant_id", "applicant_id");
+    }
+
+    public function academic()
+    {
+        return $this->hasOne(AcademicTrades::class, 'applicant_id', 'applicant_id');
+    }
+
+    public function reference()
+    {
+        return $this->hasOne(Reference::class, 'applicant_id', 'applicant_id');
+    }
+
+    public function signature()
+    {
+        return $this->hasOne(Signature::class, 'applicant_id', 'applicant_id');
+    }
+
+    public function profile()
+    {
+        return $this->hasOne(Profile::class, 'applicant_id', 'applicant_id');
+    }
+
     protected $fillable = [
         'employee_hire_date',
         'SSN',
