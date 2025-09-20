@@ -416,12 +416,7 @@ class QuestionManagerController extends Controller
 
     public function viewQuestionFile($filename)
     {
-        $path = storage_path('app/public/questions/' . $filename);
-        if (!file_exists($path)) {
-            abort(404, "File not found");
-        }
-
-        return response()->file($path);
+        return response()->download(storage_path('app/public/questions/' . $filename), $filename);
     }
 
     public function getReportByTopic($topic)
