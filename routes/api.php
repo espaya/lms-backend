@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\Admin\ExportReportController;
 use App\Http\Controllers\API\Auth\AuthController;
 use App\Http\Controllers\QuestionManagerController;
 use App\Http\Controllers\API\Admin\UserController;
+use App\Http\Controllers\API\Auth\PasswordResetController;
 use App\Http\Controllers\API\Student\StudentController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\AttendanceTardinessController;
@@ -33,6 +34,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login'])->name('login');
+Route::post('/password/forgot', [PasswordResetController::class, 'sendResetLinkEmail']);
+Route::post('/password/reset', [PasswordResetController::class, 'reset']);
 // Route::get('/view-question-file/{filename}', function(){
 //     return "Hello World!";
 // });
@@ -69,8 +72,6 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::post('/export-pdf', [ExportReportController::class, 'exportPDF']);
 
     Route::get('/admin/dashboard/all-forms/{username}', [AdminFormsController::class, 'index']);
-
-
 });
 
 Route::middleware(['auth:sanctum', 'user'])->group(function () {

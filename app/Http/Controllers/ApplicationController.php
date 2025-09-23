@@ -55,11 +55,25 @@ class ApplicationController extends Controller
             // check if applicant has already filled the application form
             $userID = Auth::id(); // active user ID
 
-            $employmentApplication = User::with(['reference', 'signature', 'applicationForm', 'academic'])->find($userID);
+            if (!$userID) {
+                return response()->json(['message' => 'User not found!'], 404);
+            }
+
+            $employmentApplication = EmploymentApplication::with([
+                'emergencyAddress',
+                'presentAddress',
+                'permanentAddress',
+                'pastEmpInfo',
+                'language',
+                'academic',
+                'reference',
+                'signature',
+            ])->where('applicant_id', $userID)->first();
 
             return response()->json([
                 'employmentApplication' => $employmentApplication,
                 'profileData' =>  $profileData,
+                'email' => Auth::user()->email,
             ], 200);
         } catch (Exception $ex) {
             Log::error($ex->getMessage());
