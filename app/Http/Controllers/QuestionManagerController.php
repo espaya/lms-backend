@@ -422,7 +422,11 @@ class QuestionManagerController extends Controller
     public function getReportByTopic($topic)
     {
         try {
-            $report = Answer::with(['user', 'topic'])->where('topic_id', $topic)->get();
+            $report = Answer::with([
+                'user:id,email',
+                'topic',
+                'profile:id,applicant_id,full_name'
+            ])->where('topic_id', $topic)->get();
 
             if (!$report) {
                 return response()->json(['message' => 'Report not found!']);

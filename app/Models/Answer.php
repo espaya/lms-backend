@@ -28,6 +28,12 @@ class Answer extends Model
         return $this->belongsTo(Topic::class);
     }
 
+    public function profile()
+    {
+        return $this->hasOne(Profile::class, 'applicant_id', 'user_id');
+    }
+
+
     public function question()
     {
         return $this->belongsTo(Question::class);
