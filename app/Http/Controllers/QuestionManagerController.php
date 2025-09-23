@@ -423,7 +423,7 @@ class QuestionManagerController extends Controller
     {
         try {
             $report = Answer::with([
-                'user:id,email',
+                'user:id,email,name',
                 'topic',
                 'profile:id,applicant_id,full_name'
             ])->where('topic_id', $topic)->get();
