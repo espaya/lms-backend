@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Support\Facades\URL;
+
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -25,5 +27,10 @@ class AppServiceProvider extends ServiceProvider
         ResetPassword::createUrlUsing(function ($user, string $token) {
             return config('app.frontend_url') . '/reset-password?token=' . $token . '&email=' . $user->email;
         });
+
+        // set url in production
+        if (env('APP_ENV') === 'production') {
+            URL::forceRootUrl(config('app.url'));
+        }
     }
 }
