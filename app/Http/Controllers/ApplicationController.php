@@ -111,7 +111,7 @@ class ApplicationController extends Controller
             'special_skills_qualifications'                 => 'required',
 
             // users_profile table
-            'phone'                                         => 'required|regex:/^\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/',
+            'phone'                                         => 'required|regex:/^\+?\d{1,4}?[-.\s]?\(?\d{1,4}?\)?[-.\s]?\d{1,9}([-.\s]?\d{1,9})*$/',
             'full_name'                                     => 'required|regex:/^[a-zA-Z., -]/',
 
             // present address table
@@ -150,7 +150,7 @@ class ApplicationController extends Controller
             'from_date_1'                                   => 'required',
             'to_date_1'                                     => 'required',
             'name_address_employer_1'                       => 'required|regex:/^[a-zA-Z 0-9,. -]+$/',
-            'phone_number_1'                                => 'required|regex:/^\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/',
+            'phone_number_1'                                => 'required|regex:/^\+?\d{1,4}?[-.\s]?\(?\d{1,4}?\)?[-.\s]?\d{1,9}([-.\s]?\d{1,9})*$/',
             'job_1'                                         => 'required|regex:/^[a-zA-Z]+$/',
             'reason_leaving_1'                              => 'required',
             'salary_1'                                      => 'required',
@@ -158,7 +158,7 @@ class ApplicationController extends Controller
             'from_date_2'                                   => 'nullable',
             'to_date_2'                                     => 'nullable',
             'name_address_employer_2'                       => 'nullable|string',
-            'phone_number_2'                                => 'nullable|regex:/^\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/',
+            'phone_number_2'                                => 'nullable|regex:/^\+?\d{1,4}?[-.\s]?\(?\d{1,4}?\)?[-.\s]?\d{1,9}([-.\s]?\d{1,9})*$/',
             'job_2'                                         => 'nullable|string',
             'reason_leaving_2'                              => 'nullable|string',
             'salary_2'                                      => 'nullable',
@@ -166,7 +166,7 @@ class ApplicationController extends Controller
             'from_date_3'                                   => 'nullable',
             'to_date_3'                                     => 'nullable',
             'name_address_employer_3'                       => 'nullable|string',
-            'phone_number_3'                                => 'nullable||regex:/^\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/',
+            'phone_number_3'                                => 'nullable|regex:/^\+?\d{1,4}?[-.\s]?\(?\d{1,4}?\)?[-.\s]?\d{1,9}([-.\s]?\d{1,9})*$/',
             'job_3'                                         => 'nullable|string',
             'reason_leaving_3'                              => 'nullable|string',
             'salary_3'                                      => 'nullable',
@@ -174,15 +174,15 @@ class ApplicationController extends Controller
             // reference table
             'reference_name_1'                      => 'required|string',
             'reference_address_1'                   => 'required|string',
-            'reference_phone_1'                     => 'required|regex:/^\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/',
+            'reference_phone_1'                     => 'required|regex:/^\+?\d{1,4}?[-.\s]?\(?\d{1,4}?\)?[-.\s]?\d{1,9}([-.\s]?\d{1,9})*$/',
             'reference_years_acquainted_1'          => 'required|string',
             'reference_name_2'                      => 'required|string',
             'reference_address_2'                   => 'required|string',
-            'reference_phone_2'                     => 'required|regex:/^\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/',
+            'reference_phone_2'                     => 'required|regex:/^\+?\d{1,4}?[-.\s]?\(?\d{1,4}?\)?[-.\s]?\d{1,9}([-.\s]?\d{1,9})*$/',
             'reference_years_acquainted_2'          => 'required|string',
             'reference_name_3'                      => 'required|string',
             'reference_address_3'                   => 'required|string',
-            'reference_phone_3'                     => 'required|regex:/^\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/',
+            'reference_phone_3'                     => 'required|regex:/^\+?\d{1,4}?[-.\s]?\(?\d{1,4}?\)?[-.\s]?\d{1,9}([-.\s]?\d{1,9})*$/',
             'reference_years_acquainted_3'          => 'required|string',
 
             // language table
@@ -353,6 +353,7 @@ class ApplicationController extends Controller
             $UserProfile->full_name = $request->full_name;
             $UserProfile->phone = $request->phone;
             $UserProfile->applicant_id = $userID;
+            $UserProfile->user_avatar = null;
 
 
             //emergency
@@ -368,7 +369,8 @@ class ApplicationController extends Controller
                 [
                     'full_name' => $request->full_name,
                     'phone' => $request->phone,
-                    'applicant_id' =>  $userID
+                    'applicant_id' =>  $userID,
+                    'user_avatar' => ''
                 ]
             );
 
@@ -564,7 +566,7 @@ class ApplicationController extends Controller
                     ['applicant_id' => $userID],
                     [
                         'signature' => $signatureName,
-                        'date_signed' => $request->date_signed,
+                        'date_signed' => now(),
                         'applicant_id' => $userID
                     ]
                 );
