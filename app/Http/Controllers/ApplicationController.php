@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\File;
 
 class ApplicationController extends Controller
 {
@@ -540,39 +541,46 @@ class ApplicationController extends Controller
                 ]
             );
 
-            if ($LangInsert) {
-                //upload and save the Signature
+            // if ($LangInsert) {
 
-                $signatureData = $request->input('signature');
+            //upload and save the Signature
 
-                if ($request->filled('signature')) {
-                }
-                $signatureParts = explode(',', $signatureData);
-                $signatureEncoded = $signatureParts[1]; // Extract the base64-encoded part
+            $signatureData = $request->input('signature');
 
-                $signatureBinary = base64_decode($signatureEncoded);
-
-                // Generate a unique filename for the signature file
-                $signatureName = time() . '.png';
-
-                // Save the signature file to disk using the Storage facade
-                Storage::put('public/signature/' . $signatureName, $signatureBinary);
-
-                $Signature->signature = $signatureName;
-                $Signature->applicant_id = $userID;
-                $Signature->date_signed = now();
-
-                Signature::firstOrCreate(
-                    ['applicant_id' => $userID],
-                    [
-                        'signature' => $signatureName,
-                        'date_signed' => now(),
-                        'applicant_id' => $userID
-                    ]
-                );
+            if ($request->filled('signature')) {
             }
+            $signatureParts = explode(',', $signatureData);
+            $signatureEncoded = $signatureParts[1]; // Extract the base64-encoded part
+
+            $signatureBinary = base64_decode($signatureEncoded);
+
+            // Generate a unique filename for the signature file
+            $signatureName = time() . '.png';
+
+            // Save the signature file to disk using the Storage facade
+            $singaturePath = storage_path('app/public/signature');
+
+            $Signature->signature = $signatureName;
+            $Signature->applicant_id = $userID;
+            $Signature->date_signed = now();
+
+            Signature::firstOrCreate(
+                ['applicant_id' => $userID],
+                [
+                    'signature' => $signatureName,
+                    'date_signed' => now(),
+                    'applicant_id' => $userID
+                ]
+            );
+            // }
 
             DB::commit();
+
+            if (!File::exists($singaturePath)) {
+                File::makeDirectory($singaturePath, 0755, true);
+            }
+
+            Storage::disk('public')->put('signature/' . $signatureName, $signatureBinary);
 
             return response()->json(['message' => 'Application Submitted Successfully'], 200);
         } catch (Exception $ex) {
