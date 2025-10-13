@@ -113,7 +113,7 @@ class ApplicationController extends Controller
 
             // users_profile table
             'phone'                                         => 'required|regex:/^\+?\d{1,4}?[-.\s]?\(?\d{1,4}?\)?[-.\s]?\d{1,9}([-.\s]?\d{1,9})*$/',
-            'full_name'                                     => 'required|regex:/^[a-zA-Z., -]/',
+            'full_name'                                     => ['required', 'string'],
 
             // present address table
             'present_address'                               => 'required|string',
@@ -130,30 +130,30 @@ class ApplicationController extends Controller
             'permanent_zip' => ['nullable', 'required_if:present_permanent_address,No', 'regex:/^\d{5}(-\d{4})?$/'],
 
             // academic/education/trades
-            'edu_current_name_location_school'              => 'required|regex:/^[a-zA-Z 0-9\s,.-]+$/',
-            'edu_current_number_years'                      => 'required|regex:/^[a-zA-Z 0-9\s,.-]+$/',
+            'edu_current_name_location_school'              => ['required', 'string'],
+            'edu_current_number_years'                      => ['required', 'string'],
             'edu_current_did_graduate'                      => 'required',
-            'edu_current_subjects_studied'                  => 'required|regex:/^[a-zA-Z 0-9\s,.-]+$/',
-            'edu_last_name_location_school'                 => 'required|regex:/^[a-zA-Z 0-9\s,.-]+$/',
-            'edu_last_number_years'                         => 'required|regex:/^[a-zA-Z 0-9\s,.-]+$/',
+            'edu_current_subjects_studied'                  => ['required', 'string'],
+            'edu_last_name_location_school'                 => ['required', 'string'],
+            'edu_last_number_years'                         => ['required', 'string'],
             'edu_last_did_graduate'                        => 'required',
-            'edu_last_subjects_studied'                     => 'required|regex:/^[a-zA-Z 0-9\s,.-]+$/',
-            'trades_current_name_location_school'           => 'required|regex:/^[a-zA-Z 0-9\s,.-]+$/',
-            'trades_current_number_years'                   => 'required|regex:/^[a-zA-Z 0-9\s,.-]+$/',
+            'edu_last_subjects_studied'                     => ['required', 'string'],
+            'trades_current_name_location_school'           => ['required', 'string'],
+            'trades_current_number_years'                   => ['required', 'string'],
             'trades_current_did_graduate'                   => 'required',
-            'trades_current_subjects_studied'               => 'required|regex:/^[a-zA-Z 0-9\s,.-]+$/',
-            'trades_last_current_name_location_school'      => 'required|regex:/^[a-zA-Z 0-9\s,.-]+$/',
-            'trades_last_current_number_years'              => 'required|regex:/^[a-zA-Z 0-9\s,.-]+$/',
+            'trades_current_subjects_studied'               => ['required', 'string'],
+            'trades_last_current_name_location_school'      => ['required', 'string'],
+            'trades_last_current_number_years'              => ['required', 'string'],
             'trades_last_current_did_graduate'              => 'required',
-            'trades_last_subjects_studied'                  => 'required|regex:/^[a-zA-Z 0-9\s,.-]+$/',
+            'trades_last_subjects_studied'                  => ['required', 'string'],
 
             // past employment info
             'from_date_1'                                   => 'required',
             'to_date_1'                                     => 'required',
-            'name_address_employer_1'                       => 'required|regex:/^[a-zA-Z 0-9,. -]+$/',
+            'name_address_employer_1'                       => ['required', 'string'],
             'phone_number_1'                                => 'required|regex:/^\+?\d{1,4}?[-.\s]?\(?\d{1,4}?\)?[-.\s]?\d{1,9}([-.\s]?\d{1,9})*$/',
-            'job_1'                                         => 'required|regex:/^[a-zA-Z]+$/',
-            'reason_leaving_1'                              => 'required',
+            'job_1'                                         => ['required', 'string'],
+            'reason_leaving_1'                              => ['required', 'string'],
             'salary_1'                                      => 'required',
 
             'from_date_2'                                   => 'nullable',
@@ -187,15 +187,15 @@ class ApplicationController extends Controller
             'reference_years_acquainted_3'          => 'required|string',
 
             // language table
-            'language_1'                            => 'required|regex:/^[a-z A-Z]+$/',
-            'read_write_1'                          => 'required|regex:/^[a-z A-Z]+$/',
-            'read_speak_1'                          => 'required|regex:/^[a-z A-Z]+$/',
-            'speak_only_1'                          => 'required|regex:/^[a-z A-Z]+$/',
+            'language_1'                            => ['required', 'string'],
+            'read_write_1'                          => ['required', 'string'],
+            'read_speak_1'                          => ['required', 'string'],
+            'speak_only_1'                          => ['required', 'string'],
 
-            'language_2'                            => 'nullable|string|regex:/^[a-z A-Z]{3,20}+$/',
-            'read_write_2'                          => 'nullable|string|regex:/^[a-z A-Z]{3,10}+$/',
-            'read_speak_2'                          => 'nullable|string|regex:/^[a-z A-Z]{3,10}+$/',
-            'speak_only_2'                          => 'nullable|string|regex:/^[a-z A-Z]{3,10}+$/',
+            'language_2'                            => 'nullable|string',
+            'read_write_2'                          => 'nullable|string',
+            'read_speak_2'                          => 'nullable|string',
+            'speak_only_2'                          => 'nullable|string',
 
             // emergency table
             'emergency_address'                     => 'required|string',
