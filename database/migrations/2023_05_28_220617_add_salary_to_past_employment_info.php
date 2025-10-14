@@ -11,20 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('options', function (Blueprint $table) {
-            $table->id(); // creates unsigned BIGINT
-            $table->foreignId('topic_id')->constrained()->onDelete('cascade');
-            $table->text('question_text');
-            $table->timestamps();
+        Schema::table('past_employment_info', function (Blueprint $table) {
+            $table->string('salary_1');
+            $table->string('salary_2')->nullable();
+            $table->string('salary_3')->nullable();
         });
     }
-
 
     /**
      * Reverse the migrations.
      */
     public function down(): void
     {
-        Schema::dropIfExists('options');
+        Schema::table('past_employment_info', function (Blueprint $table) {
+            //
+        });
     }
 };

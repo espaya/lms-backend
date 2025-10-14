@@ -17,6 +17,8 @@ class AdminFormsController extends Controller
 
             $user = User::where('name', $username)->value('id');
 
+            Log::info($user);
+
             if (!$user) {
                 return response()->json(['message' => 'User Not Found'], 404);
             }
@@ -53,16 +55,16 @@ class AdminFormsController extends Controller
                 'swornDisclosure',
                 'universalPrecaution',
                 'verification'
-            ])->where('name', $username)->first();
+            ])->where('id', $user)->first();
 
 
-            $cachedKey = 'user_forms_' . $username;
-            $cachedForms = Cache::remember($cachedKey, 3600, function () use ($forms) {
-                return $forms;
-            });
+            // $cachedKey = 'user_forms_' . $username;
+            // $cachedForms = Cache::remember($cachedKey, 3600, function () use ($forms) {
+            //     return $forms;
+            // });
 
 
-            return response()->json($cachedForms, 200);
+            return response()->json($forms, 200);
         } catch (Exception $ex) {
             Log::error($ex->getMessage());
             return response()->json(['message' => 'An unexpected error occurred'], 500);

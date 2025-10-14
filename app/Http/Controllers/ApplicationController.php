@@ -88,7 +88,7 @@ class ApplicationController extends Controller
         $request->validate([
             // employments_application table
             'employee_hire_date'                            => 'required',
-            'SSN'                                           => 'required|regex:/^\d{3}-\d{2}-\d{4}$/',
+            'SSN'                                           => 'required', // |regex:/^\d{3}-\d{2}-\d{4}$/
             'furnish_work'                                  => 'required',
             'employment_desired'                            => 'nullable',
             'position'                                      => 'required',

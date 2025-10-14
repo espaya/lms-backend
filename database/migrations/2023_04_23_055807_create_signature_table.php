@@ -11,20 +11,21 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('options', function (Blueprint $table) {
-            $table->id(); // creates unsigned BIGINT
-            $table->foreignId('topic_id')->constrained()->onDelete('cascade');
-            $table->text('question_text');
+        Schema::create('signature', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('applicant_id');
+            $table->foreign('applicant_id')->references('id')->on('users')->onDelete('cascade');
+            $table->string('signature');
+            $table->string('date_signed');
             $table->timestamps();
         });
     }
-
 
     /**
      * Reverse the migrations.
      */
     public function down(): void
     {
-        Schema::dropIfExists('options');
+        Schema::dropIfExists('signature');
     }
 };

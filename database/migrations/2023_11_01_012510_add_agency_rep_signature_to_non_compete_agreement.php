@@ -11,20 +11,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('options', function (Blueprint $table) {
-            $table->id(); // creates unsigned BIGINT
-            $table->foreignId('topic_id')->constrained()->onDelete('cascade');
-            $table->text('question_text');
-            $table->timestamps();
+        Schema::table('non_compete_agreement', function (Blueprint $table) {
+            $table->string('agency_rep_signature')->nullable();
         });
     }
-
 
     /**
      * Reverse the migrations.
      */
     public function down(): void
     {
-        Schema::dropIfExists('options');
+        Schema::table('non_compete_agreement', function (Blueprint $table) {
+            $table->dropColumn('agency_rep_signature');
+        });
     }
 };

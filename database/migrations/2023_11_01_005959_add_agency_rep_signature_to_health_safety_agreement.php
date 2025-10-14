@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('answers', function (Blueprint $table) {
-            $table->dropColumn('answer_text');
+        Schema::table('health_safety_agreement', function (Blueprint $table) {
+            $table->string('agency_rep_signature')->nullable();
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('answers', function (Blueprint $table) {
-            $table->dropColumn('answer_text');
+        Schema::table('health_safety_agreement', function (Blueprint $table) {
+            $table->dropColumn('agency_rep_signature');
         });
     }
 };

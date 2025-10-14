@@ -13,6 +13,14 @@ return new class extends Migration
     {
         Schema::create('answers', function (Blueprint $table) {
             $table->id();
+            $table->json('answers');
+            $table->text('declaration');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('topic_id')->constrained()->onDelete('cascade');
+            $table->integer('score');
+            $table->integer('total')->nullable();
+            $table->string('time')->nullable();
+            $table->text('signature');
             $table->timestamps();
         });
     }

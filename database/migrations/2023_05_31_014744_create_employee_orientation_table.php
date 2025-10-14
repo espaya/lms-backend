@@ -11,7 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('answers', function (Blueprint $table) {
+        Schema::create('employee_orientation', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('applicant_id');
+            $table->string('signature');
+            $table->string('dateOfOrientation');
+            $table->foreign('applicant_id')->references('id')->on('users')->onDelete('cascade');
             $table->timestamps();
         });
     }
@@ -21,8 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('answers', function (Blueprint $table) {
-            $table->timestamps();
-        });
+        Schema::dropIfExists('employee_orientation');
     }
 };
