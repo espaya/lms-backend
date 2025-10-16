@@ -35,7 +35,7 @@ class CriminalHistorySearch extends Controller
 
             return response()->json([
                 'criminalHistory' => $criminalHistory,
-                'profileData' => $profileData
+                'profileData' => $profileData ?? 'N/A'
             ], 200);
         } catch (Exception $ex) {
             Log::error($ex->getMessage());

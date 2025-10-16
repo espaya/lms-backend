@@ -34,7 +34,7 @@ class SwornDisclosureController extends Controller
             return response()->json([
                 'position' => $postion->position,
                 'sworn' => $sworn,
-                'profileData' => $profileData->full_name
+                'profileData' => $profileData->full_name ?? "N/A"
             ], 200);
         } catch (Exception $ex) {
             Log::error($ex->getMessage());

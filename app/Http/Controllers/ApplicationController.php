@@ -73,7 +73,7 @@ class ApplicationController extends Controller
 
             return response()->json([
                 'employmentApplication' => $employmentApplication,
-                'profileData' =>  $profileData,
+                'profileData' =>  $profileData ?? 'N/A',
                 'email' => Auth::user()->email,
             ], 200);
         } catch (Exception $ex) {

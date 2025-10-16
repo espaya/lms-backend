@@ -33,7 +33,7 @@ class AttendanceTardinessController extends Controller
 
             return response()->json([
                 'attendanceData' => $attendance,
-                'profileData' => $profileData
+                'profileData' => $profileData ?? 'N/A'
             ], 200);
         } catch (Exception $ex) {
             Log::error($ex->getMessage());

@@ -33,7 +33,7 @@ class UniversalPrecautionsController extends Controller
 
             return response()->json([
                 'precautionsData' => $precautions,
-                'profileData' => $profileData->full_name
+                'profileData' => $profileData->full_name ?? "N/A"
             ], 200);
         } catch (Exception $ex) {
             Log::error($ex->getMessage());

@@ -32,7 +32,7 @@ class EmployeeConductController extends Controller
 
             return response()->json([
                 'empConduct' => $empConduct,
-                'profileData' => $profileData->full_name
+                'profileData' => $profileData->full_name ?? 'N/A'
             ], 200);
         } catch (Exception $ex) {
             Log::error($ex->getMessage());

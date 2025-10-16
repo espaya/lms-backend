@@ -31,7 +31,7 @@ class NonCompeteAgreementController extends Controller
 
             return response()->json([
                 'nonCompete' => $nonCompete,
-                'profileData' => $profileData->full_name,
+                'profileData' => $profileData->full_name ?? 'N/A',
             ], 200);
         } catch (Exception $ex) {
             Log::error($ex->getMessage());

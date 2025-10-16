@@ -17,8 +17,6 @@ class AdminFormsController extends Controller
 
             $user = User::where('name', $username)->value('id');
 
-            Log::info($user);
-
             if (!$user) {
                 return response()->json(['message' => 'User Not Found'], 404);
             }
@@ -56,13 +54,6 @@ class AdminFormsController extends Controller
                 'universalPrecaution',
                 'verification'
             ])->where('id', $user)->first();
-
-
-            // $cachedKey = 'user_forms_' . $username;
-            // $cachedForms = Cache::remember($cachedKey, 3600, function () use ($forms) {
-            //     return $forms;
-            // });
-
 
             return response()->json($forms, 200);
         } catch (Exception $ex) {

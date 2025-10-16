@@ -35,7 +35,7 @@ class EmployeeSafetyController extends Controller
             return response()->json(
                 [
                     'empSafety' => $empSafety,
-                    'profileData' => $profileData->full_name
+                    'profileData' => $profileData->full_name ?? 'N/A'
                 ],
                 200
             );
