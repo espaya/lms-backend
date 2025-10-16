@@ -35,7 +35,7 @@ class VerificationController extends Controller
                 'profileData' => $profileData->full_name ?? ""
             ], 200);
         } catch (Exception $ex) {
-            Log::error($ex->getMessage());
+            Log::error($ex->getMessage() . 'on line: ' . $ex->getLine());
             return response()->json(['message' => 'An unexpected error occurred'], 500);
         }
     }
