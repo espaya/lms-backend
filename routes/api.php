@@ -63,6 +63,7 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/users', [UserController::class, 'index']);
     Route::post('/users/add', [UserController::class, 'store']);
     Route::post('/users/update/{id}', [UserController::class, 'updateUser']);
+    Route::delete('/user/delete/{id}', [UserController::class, 'destroy']);
     Route::get('/users/single/{username}', [UserController::class, 'view']);
     Route::get('/users/single/{username}/quizzes', [UserController::class, 'getUserAnswers']);
     Route::delete('delete-topic-subject-question/{id}', [QuestionManagerController::class, 'destroy']);
