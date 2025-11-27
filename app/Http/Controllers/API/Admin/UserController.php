@@ -540,7 +540,7 @@ class UserController extends Controller
 
             return response()->json(['message' => 'User deleted successfully!'], 200);
         } catch (Exception $ex) {
-            Log::error($ex->getMessage());
+            Log::error('Error deleting user: ' . $ex->getMessage() . 'on line ' . $ex->getLine());
             return response()->json(['message' => 'An unexpected error occurred'], 500);
         }
     }
