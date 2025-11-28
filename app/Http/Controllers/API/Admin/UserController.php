@@ -526,15 +526,16 @@ class UserController extends Controller
                 foreach ($answers as $answer) {
                     if (!empty($answer->signature)) {
                         $signaturePath = storage_path('app/public/signature/' . $answer->signature);
-
                         if (file_exists($signaturePath)) {
                             unlink($signaturePath);
                         }
                     }
-
-                    $answer->delete();
                 }
+
+                // Delete ALL answers for the user
+                Answer::where('user_id', $id)->delete();
             }
+
 
             $user->delete();
 
