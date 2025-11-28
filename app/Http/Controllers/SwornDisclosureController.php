@@ -32,7 +32,7 @@ class SwornDisclosureController extends Controller
             $sworn = SwornDisclosure::where('applicant_id', $userID)->first();
 
             return response()->json([
-                'position' => $postion->position,
+                'position' => $postion->position ?? "N/A",
                 'sworn' => $sworn,
                 'profileData' => $profileData->full_name ?? "N/A"
             ], 200);
