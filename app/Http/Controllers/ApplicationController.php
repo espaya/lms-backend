@@ -119,7 +119,7 @@ class ApplicationController extends Controller
             'present_address'                               => 'required|string',
             'present_city'                                  => 'required|string',
             'present_state'                                 => 'required',
-            'present_zip'                                   => 'required|regex:/^\d{5}(-\d{4})?$/',
+            'present_zip'                                   => 'required',
 
             'present_permanent_address'                     => 'required',
 
@@ -127,7 +127,7 @@ class ApplicationController extends Controller
             'permanent_address' => ['nullable', 'required_if:present_permanent_address,No', 'string'],
             'permanent_city' => ['nullable', 'required_if:present_permanent_address,No', 'string'],
             'permanent_state' => ['nullable', 'required_if:present_permanent_address,No', 'string'],
-            'permanent_zip' => ['nullable', 'required_if:present_permanent_address,No', 'regex:/^\d{5}(-\d{4})?$/'],
+            'permanent_zip' => ['nullable', 'required_if:present_permanent_address,No'],
 
             // academic/education/trades
             'edu_current_name_location_school'              => ['required', 'string'],
