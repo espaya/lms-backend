@@ -613,7 +613,7 @@ class UserController extends Controller
     public function index(Request $request)
     {
         try {
-            $perPage = $request->input('per_page', 10); // Default 10 items per page
+            $perPage = $request->input('per_page', 20); // Default 10 items per page
             $users = User::where('role', "USER")
                 ->orderBy("name", "ASC")
                 ->paginate($perPage);
