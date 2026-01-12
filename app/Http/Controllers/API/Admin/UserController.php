@@ -615,7 +615,7 @@ class UserController extends Controller
         try {
             $perPage = $request->input('per_page', 10); // Default 10 items per page
             $users = User::where('role', "USER")
-                ->orderBy("id", "DESC")
+                ->orderBy("name", "ASC")
                 ->paginate($perPage);
 
             return response()->json([
