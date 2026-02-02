@@ -180,12 +180,17 @@ class QuestionManagerController extends Controller
             }
 
             // send email to all users
-            // $users = User::where('role', 'USER')->get();
+            $users = User::where('role', 'USER')->get();
 
-            // $fileUrl = asset('public/storage/questions/' . $fileName);
-            // foreach ($users as $user) {
-            //     Mail::to($user->email)->send(new QuestionUploadMail($user, $fileUrl));
-            // }
+            $delaySeconds = 20;
+
+            $fileUrl = asset('public/storage/questions/' . $fileName);
+            foreach ($users as $index => $user) {
+                Mail::to($user->email)->later(
+                    now()->addSeconds($index * $delaySeconds),
+                    new QuestionUploadMail($user, $fileUrl)
+                );
+            }
 
             DB::commit();
 
