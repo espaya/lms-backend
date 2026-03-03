@@ -23,7 +23,6 @@ class AdminController extends Controller
     {
         $this->userProfileService = $userProfileService;
         $this->userStatisticsService = $userStatisticsService;
-
     }
 
     public function index()
@@ -44,7 +43,7 @@ class AdminController extends Controller
         $signedApplications = $this->userStatisticsService->countApplications();
 
         $countUnsignedApplications = $this->userStatisticsService->countUnsignedApplications();
-        
+
         return view('/admin.home', ['userID' => $userID, 'title' => $title, 'adminData' => $adminData, 'adminAccount' => $adminAccount, 'userCount' => $userCount, 'userPercentage' => $userPercentage, 'signedApplications' => $signedApplications, 'countUnsignedApplications' => $countUnsignedApplications]);
     }
 
@@ -68,13 +67,15 @@ class AdminController extends Controller
         // get admin info
         $adminAccount = $this->userProfileService->getAdminAccount();
 
-        return view('admin.applicants.index', 
-        [
-            'searchResults' => $searchResults, 
-            'title' => $title, 
-            'adminData' => $adminData, 
-            'adminAccount' => $adminAccount
-        ]);
+        return view(
+            'admin.applicants.index',
+            [
+                'searchResults' => $searchResults,
+                'title' => $title,
+                'adminData' => $adminData,
+                'adminAccount' => $adminAccount
+            ]
+        );
     }
 
     public function show($id)
@@ -90,7 +91,7 @@ class AdminController extends Controller
 
         $title = $adminData['name'] . " Profile | 1staccess Home Care";
 
-        return view('admin.profile.index', ['adminData' => $adminData, 'title' => $title, 'adminAccount' => $adminAccount]);   
+        return view('admin.profile.index', ['adminData' => $adminData, 'title' => $title, 'adminAccount' => $adminAccount]);
     }
 
     public function updateAccount(Request $request)
@@ -126,8 +127,7 @@ class AdminController extends Controller
         // check if admin table is empty, insert data else update
         $check = DB::table('admin_profile_migration')->where('admin_ID', $admin_ID)->first();
 
-        if(empty($check))
-        {
+        if (empty($check)) {
             // insert name of image into db and save file in the directory
             $uploadedFile = $request->file('avatar');
             $avatarName = time() . '.' . $uploadedFile->extension();
@@ -140,9 +140,7 @@ class AdminController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-        }
-        else
-        {
+        } else {
             // get old avatar name from the db
             $oldAvatar = $check->admin_avatar;
 
@@ -153,17 +151,15 @@ class AdminController extends Controller
 
             // update filename in the db
             DB::table('admin_profile_migration')->where('admin_ID', $admin_ID)
-            ->update([
-                'admin_avatar' => $avatarName,
-                'updated_at' => now(),
-            ]);
+                ->update([
+                    'admin_avatar' => $avatarName,
+                    'updated_at' => now(),
+                ]);
 
             // delete old avatar from directory
-            if($oldAvatar)
-            {
+            if ($oldAvatar) {
                 $oldAvatarPath = public_path('avatars') . '/' . $oldAvatar;
-                if(fileExists($oldAvatarPath))
-                {
+                if (fileExists($oldAvatarPath)) {
                     unlink($oldAvatarPath);
                 }
             }
@@ -185,8 +181,7 @@ class AdminController extends Controller
         // check if admin table is empty, insert data else update
         $check = DB::table('admin_profile_migration')->where('admin_ID', $admin_ID)->first();
 
-        if(empty($check))
-        {
+        if (empty($check)) {
             // if empty insert data
             DB::table('admin_profile_migration')->insert([
                 'admin_fullname' => $request->input('full_name'),
@@ -196,44 +191,28 @@ class AdminController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-        }
-        else
-        {
+        } else {
             // if not empty update data
             DB::table('admin_profile_migration')->where('admin_ID', $admin_ID)
-            ->update([
-                'admin_fullname' => $request->input('full_name'),
-                'admin_phone' => $request->input('phone'),
-                'admin_address' => $request->input('address'),
-                'admin_ID' => $admin_ID,
-                'updated_at' => now(),
-            ]);
+                ->update([
+                    'admin_fullname' => $request->input('full_name'),
+                    'admin_phone' => $request->input('phone'),
+                    'admin_address' => $request->input('address'),
+                    'admin_ID' => $admin_ID,
+                    'updated_at' => now(),
+                ]);
         }
 
         return redirect()->route('profile')->with('success', 'Profile Updated Successfully');
     }
 
-    public function create()
-    {
+    public function create() {}
 
-    }
+    public function store(Request $request) {}
 
-    public function store(Request $request)
-    {
+    public function edit($id) {}
 
-    }
+    public function update(Request $request, $id) {}
 
-    public function edit($id){
-
-    }
-
-    public function update(Request $request, $id)
-    {
-
-    }
-
-    public function destroy($id)
-    {
-
-    }
+    public function destroy($id) {}
 }

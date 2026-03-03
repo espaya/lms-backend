@@ -14,8 +14,6 @@ class AvatarController extends Controller
     public function index()
     {
         $userID = Auth::id();
-
-        $userID = Auth::id();
         // full name
         $profile =DB::table('users_profile')->where('applicant_id', $userID)->get();
         $profileData = [];

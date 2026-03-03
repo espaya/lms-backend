@@ -55,8 +55,6 @@ class AdminFormsController extends Controller
                 'verification'
             ])->where('id', $user)->first();
 
-            Log::info($forms);
-
             return response()->json($forms, 200);
         } catch (Exception $ex) {
             Log::error($ex->getMessage());

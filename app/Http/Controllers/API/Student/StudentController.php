@@ -79,13 +79,15 @@ class StudentController extends Controller
             // Save only if changes are made
             if ($user->isDirty()) {
                 $user->save();
-                return response()->json(['message' => 'User updated successfully']);
+                return response()->json(['message' => 'User updated successfully'], 200);
             }
 
-            return response()->json(['message' => 'No changes detected']);
+            return response()->json(['message' => 'No changes detected'], 200);
         } catch (Exception $ex) {
             Log::error($ex->getMessage());
-            return response()->json(['message' => 'Error occurred whilst saving your details']);
+            return response()->json([
+                'message' => 'Error occurred whilst saving your details'
+                ], 500);
         }
     }
 }

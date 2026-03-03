@@ -109,8 +109,6 @@ class UserController extends Controller
                 Mail::to($user->email)->send(new UserAccountEmail($user));
             }
 
-
-
             DB::commit();
 
             return response()->json(['message' => 'Users added successfully'], 200);
@@ -597,10 +595,10 @@ class UserController extends Controller
             // Save only if changes are made
             if ($user->isDirty()) {
                 $user->save();
-                return response()->json(['message' => 'User updated successfully']);
+                return response()->json(['message' => 'User updated successfully'], 200);
             }
 
-            return response()->json(['message' => 'No changes detected']);
+            return response()->json(['message' => 'No changes detected'], 200);
         } catch (\Exception $ex) {
             return response()->json([
                 'message' => 'An error occurred while updating user.',
@@ -608,7 +606,6 @@ class UserController extends Controller
             ], 500);
         }
     }
-
 
     public function index(Request $request)
     {
@@ -626,7 +623,7 @@ class UserController extends Controller
                     'per_page' => $users->perPage(),
                     'total' => $users->total(),
                 ]
-            ]);
+            ], 200);
         } catch (Exception $ex) {
             Log::error("Error fetching users: " . $ex->getMessage());
             return response()->json(
@@ -645,7 +642,7 @@ class UserController extends Controller
                 return response()->json(['message' => 'User not found'], 404);
             }
 
-            return response()->json($user);
+            return response()->json($user, 200);
         } catch (Exception $ex) {
             Log::error('Error fetching user data: ' . $ex->getMessage());
             return response()->json(['message' => 'Error getting user data'], 500);
@@ -680,7 +677,7 @@ class UserController extends Controller
                     'per_page' => $answers->perPage(),
                     'total' => $answers->total()
                 ]
-            ]);
+            ], 200);
         } catch (\Exception $ex) {
             Log::error($ex->getMessage());
             return response()->json(['message' => 'Error getting report'], 500);
