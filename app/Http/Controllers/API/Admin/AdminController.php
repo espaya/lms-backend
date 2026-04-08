@@ -424,7 +424,7 @@ class AdminController extends Controller
             ->get();
 
         // merge all
-        $activities = $activities
+        $activities = $activities 
             ->merge($users)
             ->merge($answers)
             ->merge($verifications)

@@ -83,7 +83,7 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/dashboard/top-users', [AdminController::class, 'topUsers']);
     Route::get('/dashboard/users-location', [AdminController::class, 'usersLocation']);
     Route::get('/dashboard/graph', [AdminController::class, 'graph']);
-    Route::get('/dashboard/notifications', [AdminController::class, 'notifications']);
+    Route::get('/dashboard/notifications', [AdminController::class, 'notifications']); 
 });
 
 Route::middleware(['auth:sanctum', 'user'])->group(function () {
