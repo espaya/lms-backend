@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\Admin\ExportReportController;
 use App\Http\Controllers\API\Auth\AuthController;
 use App\Http\Controllers\QuestionManagerController;
 use App\Http\Controllers\API\Admin\UserController;
+use App\Http\Controllers\API\Admin\AdminController;
 use App\Http\Controllers\API\Auth\PasswordResetController;
 use App\Http\Controllers\API\Student\StudentController;
 use App\Http\Controllers\ApplicationController;
@@ -73,6 +74,16 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::post('/export-pdf', [ExportReportController::class, 'exportPDF']);
 
     Route::get('/admin/dashboard/all-forms/{username}', [AdminFormsController::class, 'index']);
+
+    Route::get('/dashboard/users', [AdminController::class, 'users']);
+    Route::get('/dashboard/quizzes', [AdminController::class, 'quizzes']);
+    Route::get('/dashboard/forms', [AdminController::class, 'forms']);
+    Route::get('/dashboard/quick-actions', [AdminController::class, 'quickActions']);
+    Route::get('/dashboard/recent-users', [AdminController::class, 'recentUsers']);
+    Route::get('/dashboard/top-users', [AdminController::class, 'topUsers']);
+    Route::get('/dashboard/users-location', [AdminController::class, 'usersLocation']);
+    Route::get('/dashboard/graph', [AdminController::class, 'graph']);
+    Route::get('/dashboard/notifications', [AdminController::class, 'notifications']);
 });
 
 Route::middleware(['auth:sanctum', 'user'])->group(function () {
