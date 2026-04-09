@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\API\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -185,6 +184,7 @@ class AdminController extends Controller
      * TOP USERS (LEADERBOARD)
      * ===============================
      */
+    
     public function topUsers()
     {
         $users = DB::table('users')
@@ -200,7 +200,7 @@ class AdminController extends Controller
                 'users_profile.user_avatar',
 
                 // total attempts
-                DB::raw('COUNT(answers.id) as attempts'),
+                DB::raw('COUNT(answers.user_id) as attempts'),
 
                 // passed (>=50%)
                 DB::raw('SUM(CASE 
