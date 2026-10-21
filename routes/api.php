@@ -17,6 +17,7 @@ use App\Http\Controllers\DrugTestingPolicyController;
 use App\Http\Controllers\EmployeeAgreement;
 use App\Http\Controllers\EmployeeConductController;
 use App\Http\Controllers\EmployeeDressCodeController;
+use App\Http\Controllers\EmployeeHandbookController;
 use App\Http\Controllers\EmployeeOrientationController;
 use App\Http\Controllers\EmployeeReferenceController;
 use App\Http\Controllers\EmployeeSafetyController;
@@ -83,7 +84,7 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/dashboard/top-users', [AdminController::class, 'topUsers']);
     Route::get('/dashboard/users-location', [AdminController::class, 'usersLocation']);
     Route::get('/dashboard/graph', [AdminController::class, 'graph']);
-    Route::get('/dashboard/notifications', [AdminController::class, 'notifications']); 
+    Route::get('/dashboard/notifications', [AdminController::class, 'notifications']);
 });
 
 Route::middleware(['auth:sanctum', 'user'])->group(function () {
@@ -125,6 +126,9 @@ Route::middleware(['auth:sanctum', 'user'])->group(function () {
     Route::get('/user/employee-agreement-forms/get', [EmployeeAgreement::class, 'index']);
     Route::post('/user/employee-agreement-form', [EmployeeAgreement::class, 'store']);
 
+    Route::get('/user/employee-handbook-forms/get', [EmployeeHandbookController::class, 'index']);
+    Route::post('/user/employee-handbook-forms', [EmployeeHandbookController::class, 'store']);
+
     Route::get('/user/employee-reference-check-forms/get', [EmployeeReferenceController::class, 'index']);
     Route::post('/user/employee-reference-check-forms', [EmployeeReferenceController::class, 'store']);
 
@@ -164,5 +168,4 @@ Route::middleware(['auth:sanctum', 'user'])->group(function () {
     Route::get('/user/verification-of-professional-license-forms/get', [VerificationController::class, 'index']);
     Route::post('/user/verification-of-professional-license-forms', [VerificationController::class, 'store']);
 
-    // Route::get('/user/verification-of-professional-license', [VerificationController::class, 'index']);
 });

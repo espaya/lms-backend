@@ -142,6 +142,12 @@ class User extends Authenticatable
     {
         return $this->hasOne(UniversalPrecautions::class, 'applicant_id');
     }
+    
+    
+    public function employeeHandbook()
+    {
+        return $this->hasOne(EmployeeHandbook::class, 'applicant_id');
+    }
 
 
     /**

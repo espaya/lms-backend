@@ -11,7 +11,8 @@ use Illuminate\Support\Facades\Log;
 
 class AdminFormsController extends Controller
 {
-    public function index($username)
+    /**/ 
+    public function index(string $username)
     {
         try {
 
@@ -52,7 +53,8 @@ class AdminFormsController extends Controller
                 'smoking',
                 'swornDisclosure',
                 'universalPrecaution',
-                'verification'
+                'verification',
+                'employeeHandbook'
             ])->where('id', $user)->first();
 
             return response()->json($forms, 200);
