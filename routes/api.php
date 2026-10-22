@@ -94,6 +94,7 @@ Route::middleware(['auth:sanctum', 'user'])->group(function () {
     Route::post('/user/update-my-profile/{id}', [StudentController::class, 'update']);
     Route::get('/user/my-profile/{username}', [StudentController::class, 'index']);
     Route::get('/user/is-answered/{topic_id}', [QuestionManagerController::class, 'isAnswered']);
+    Route::get('/user/quizzes', [QuestionManagerController::class, 'getUserQuizzes']);
 
     // forms route
     Route::post('/user/application-forms', [ApplicationController::class, 'store']);
@@ -128,7 +129,7 @@ Route::middleware(['auth:sanctum', 'user'])->group(function () {
 
     Route::get('/user/employee-handbook-forms/get', [EmployeeHandbookController::class, 'index']);
     Route::post('/user/employee-handbook-forms', [EmployeeHandbookController::class, 'store']);
-
+ 
     Route::get('/user/employee-reference-check-forms/get', [EmployeeReferenceController::class, 'index']);
     Route::post('/user/employee-reference-check-forms', [EmployeeReferenceController::class, 'store']);
 

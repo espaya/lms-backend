@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Mail;
+use Carbon\Carbon;
+
 
 class QuestionManagerController extends Controller
 {
@@ -99,27 +101,78 @@ class QuestionManagerController extends Controller
 
     public function store(Request $request)
     {
+        // FormData sends `questions` and `schedule` as JSON strings.
+        // Merge them back into arrays so validation + the rest of the method
+        // can treat them like normal request input.
+        if (is_string($request->input('questions'))) {
+            $request->merge([
+                'questions' => json_decode($request->input('questions'), true),
+            ]);
+        }
+        if (is_string($request->input('schedule'))) {
+            $request->merge([
+                'schedule' => json_decode($request->input('schedule'), true),
+            ]);
+        }
+
         $request->validate([
-            'subject' => ['required', 'string'],
-            'topics' => ['required', 'array', 'min:1'],
-            'topics.*' => ['required', 'string'],
-            'questions' => ['required', 'array', 'min:1'],
-            'questions.*.text' => ['required', 'string'],
-            'questions.*.options' => ['required', 'array', 'min:1'],
+            'subject'                  => ['required', 'string'],
+            'topics'                   => ['required', 'array', 'min:1'],
+            'topics.*'                 => ['required', 'string'],
+            'questions'                => ['required', 'array', 'min:1'],
+            'questions.*.text'         => ['required', 'string'],
+            'questions.*.options'      => ['required', 'array', 'min:1'],
             'questions.*.correctIndex' => ['required', 'integer'],
-            'file' => ['required', 'file', 'mimes:pdf']
+            'file'                     => ['required', 'file', 'mimes:pdf'],
+
+            // ---- Scheduling ----
+            // Omitted entirely when the admin clicks "Save (Available Now)".
+            // Present only when they clicked "Schedule Quiz" and confirmed.
+            'schedule'                    => ['nullable', 'array'],
+            'schedule.startDate'          => ['required_with:schedule', 'date'],
+            'schedule.endDate'            => ['nullable', 'date', 'after:schedule.startDate'],
+            'schedule.durationMinutes'    => ['nullable', 'integer', 'min:1'],
         ]);
+
+        // ------------------------------------------------------------------
+        // Resolve the schedule ONCE — it applies to every question in this upload.
+        //
+        //  • No `schedule` in the payload  → Save/Available Now:
+        //        available_from   = null  (available immediately)
+        //        available_until  = null  (available forever)
+        //        duration_minutes = null  (no per-attempt limit)
+        //
+        //  • `schedule` present            → Scheduled:
+        //        available_from   = startDate
+        //        available_until  = endDate or null (open-ended if omitted)
+        //        duration_minutes = durationMinutes or null
+        // ------------------------------------------------------------------
+        $schedule        = $request->input('schedule');
+        $publishedAt     = now();               // the quiz exists as of now in both flows
+        $availableFrom   = null;
+        $availableUntil  = null;
+        $durationMinutes = null;
+
+        if (! empty($schedule)) {
+            $availableFrom   = Carbon::parse($schedule['startDate']);
+            $availableUntil  = ! empty($schedule['endDate'])
+                ? Carbon::parse($schedule['endDate'])
+                : null;                         // null = no closing date
+            $durationMinutes = ! empty($schedule['durationMinutes'])
+                ? (int) $schedule['durationMinutes']
+                : null;
+        }
 
         $uploadedFilePath = null;
 
         try {
             DB::beginTransaction();
 
-            // ✅ First upload the file so we have its name
+            // ---- File upload (unchanged) ----
             $file = $request->file('file');
             $uploadDir = storage_path('app/public/questions');
 
-            if (!is_dir($uploadDir)) {
+            if (! is_dir($uploadDir)) {
                 mkdir($uploadDir, 0755, true);
             }
 
@@ -127,7 +180,7 @@ class QuestionManagerController extends Controller
             $file->move($uploadDir, $fileName);
             $uploadedFilePath = $uploadDir . '/' . $fileName;
 
-            // Generate unique slug for subject
+            // ---- Subject (unchanged) ----
             $baseSlug = Str::slug($request->subject);
             $slug = $baseSlug;
             $counter = 1;
@@ -138,11 +191,11 @@ class QuestionManagerController extends Controller
 
             $subject = Subject::create([
                 'name' => trim($request->subject),
-                'slug' => $slug
+                'slug' => $slug,
             ]);
 
+            // ---- Topics + Questions ----
             foreach ($request->topics as $topicName) {
-                // Generate unique slug for each topic
                 $baseTopicSlug = Str::slug($topicName);
                 $topicSlug = $baseTopicSlug;
                 $topicCounter = 1;
@@ -151,16 +204,14 @@ class QuestionManagerController extends Controller
                     $topicSlug = $baseTopicSlug . '-' . $topicCounter++;
                 }
 
-                // ✅ Store file name in topic
                 $topic = Topic::create([
                     'subject_id' => $subject->id,
                     'name'       => $topicName,
                     'slug'       => $topicSlug,
-                    'fileName'       => $fileName // <-- Added
+                    'fileName'   => $fileName,
                 ]);
 
                 foreach ($request->questions as $questionData) {
-                    // Generate unique slug for question
                     $baseQuestionSlug = Str::slug(Str::limit($questionData['text'], 50));
                     $questionSlug = $baseQuestionSlug;
                     $questionCounter = 1;
@@ -170,33 +221,53 @@ class QuestionManagerController extends Controller
                     }
 
                     Question::create([
-                        'topic_id'       => $topic->id,
-                        'question_text'  => $questionData['text'],
-                        'slug'           => $questionSlug,
-                        'options'        => json_encode($questionData['options']),
-                        'correct_index'  => $questionData['correctIndex']
+                        'topic_id'         => $topic->id,
+                        'question_text'    => $questionData['text'],
+                        'slug'             => $questionSlug,
+                        'options'          => json_encode($questionData['options']),
+                        'correct_index'    => $questionData['correctIndex'],
+
+                        // ---- Scheduling ----
+                        'published_at'     => $publishedAt,
+                        'available_from'   => $availableFrom,
+                        'available_until'  => $availableUntil,
+                        'duration_minutes' => $durationMinutes,
+                        // 'closed_at' stays NULL — manual close is a separate action.
                     ]);
                 }
             }
 
-            // send email to all users
-            $users = User::where('role', 'USER')->get();
+            // ---- Notify users (unchanged) ----
+            // Notify only if the quiz is live right now.
+            // Future-scheduled quizzes are notified by quizzes:activate-scheduled.
+            $isLiveNow = is_null($availableFrom) || $availableFrom->lte(now());
 
-            $delaySeconds = 20;
+            if ($isLiveNow) {
+                $users = User::where('role', 'USER')->get();
+                $fileUrl = asset('public/storage/questions/' . $fileName);
 
-            $fileUrl = asset('public/storage/questions/' . $fileName);
-            foreach ($users as $index => $user) {
-                Mail::to($user->email)->later(
-                    now()->addSeconds($index * $delaySeconds),
-                    new QuestionUploadMail($user, $fileUrl)
-                );
+                foreach ($users as $index => $user) {
+                    Mail::to($user->email)->later(
+                        now()->addSeconds($index * 20),
+                        new QuestionUploadMail($user, $fileUrl)
+                    );
+                }
+
+                Topic::where('fileName', $fileName)->update(['notified_at' => now()]);
             }
 
             DB::commit();
 
             return response()->json([
-                'message' => 'Questions uploaded successfully',
-                'file_path' => asset('storage/questions/' . $fileName)
+                'message'   => 'Questions uploaded successfully',
+                'file_path' => asset('storage/questions/' . $fileName),
+                // Helpful for the admin toast:
+                'availability' => [
+                    'mode'             => $schedule ? 'scheduled' : 'available_now',
+                    'available_from'   => $availableFrom?->toIso8601String(),
+                    'available_until'  => $availableUntil?->toIso8601String(),
+                    'duration_minutes' => $durationMinutes,
+                ],
             ]);
         } catch (Exception $ex) {
             DB::rollBack();
@@ -208,7 +279,7 @@ class QuestionManagerController extends Controller
             Log::error('Error uploading questions: ' . $ex->getMessage());
 
             return response()->json([
-                'message' => 'Error uploading questions. Try again later'
+                'message' => 'Error uploading questions. Try again later',
             ], 500);
         }
     }
@@ -259,16 +330,6 @@ class QuestionManagerController extends Controller
         }
     }
 
-
-    public function getQuestions(Topic $topic)
-    {
-        $questions = $topic->questions()->select('id', 'question_text', 'options', 'correct_index')->get();
-
-        return response()->json([
-            'success' => true,
-            'questions' => $questions
-        ]);
-    }
 
     public function storeAnswer(Request $request)
     {
@@ -480,121 +541,6 @@ class QuestionManagerController extends Controller
         }
     }
 
-    public function update(Request $request, $id)
-    {
-        $request->validate([
-            'subject' => ['required', 'string'],
-            'topics' => ['required', 'array', 'min:1'],
-            'topics.*' => ['required', 'string'],
-            'questions' => ['required', 'array', 'min:1'],
-            'questions.*.text' => ['required', 'string'],
-            'questions.*.options' => ['required', 'array', 'min:1'],
-            'questions.*.correctIndex' => ['required', 'integer'],
-            'file' => ['nullable', 'file', 'mimes:pdf']
-        ]);
-
-        try {
-            DB::beginTransaction();
-
-            $findData = Topic::with(['subject', 'questions'])
-                ->where('id', $id)
-                ->first();
-
-            if (!$findData) {
-                return response()->json(['message' => 'Topic not found'], 404);
-            }
-
-            // ✅ Update Subject if changed
-            if ($findData->subject->name !== $request->subject) {
-                $baseSlug = Str::slug($request->subject);
-                $slug = $baseSlug;
-                $counter = 1;
-                while (Subject::where('slug', $slug)->where('id', '!=', $findData->subject->id)->exists()) {
-                    $slug = $baseSlug . '-' . $counter++;
-                }
-
-                $findData->subject->name = trim($request->subject);
-                $findData->subject->slug = $slug;
-
-                if ($findData->subject->isDirty()) {
-                    $findData->subject->save();
-                }
-            }
-
-            // ✅ Update file if uploaded
-            if ($request->hasFile('file')) {
-                $file = $request->file('file');
-                $uploadDir = storage_path('app/public/questions');
-
-                if (!is_dir($uploadDir)) {
-                    mkdir($uploadDir, 0755, true);
-                }
-
-                // Compare using hash (safer than just filename)
-                $newFileHash = md5_file($file->getRealPath());
-
-                $existingFilePath = $uploadDir . '/' . $findData->fileName;
-                $existingFileHash = file_exists($existingFilePath) ? md5_file($existingFilePath) : null;
-
-                if ($newFileHash !== $existingFileHash) {
-                    // Only upload if file content differs
-                    $fileName = time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
-                    $file->move($uploadDir, $fileName);
-
-                    $findData->fileName = $fileName;
-                    $findData->save();
-                }
-            }
-
-            // ✅ Update topics (for simplicity: update current one)
-            if ($findData->name !== $request->topics[0]) {
-                $baseTopicSlug = Str::slug($request->topics[0]);
-                $topicSlug = $baseTopicSlug;
-                $counter = 1;
-                while (Topic::where('slug', $topicSlug)->where('id', '!=', $findData->id)->exists()) {
-                    $topicSlug = $baseTopicSlug . '-' . $counter++;
-                }
-
-                $findData->name = $request->topics[0];
-                $findData->slug = $topicSlug;
-
-                if ($findData->isDirty()) {
-                    $findData->save();
-                }
-            }
-
-            // ✅ Update questions (loop)
-            foreach ($request->questions as $index => $qData) {
-                $question = $findData->questions[$index] ?? null;
-                if (!$question) continue;
-
-                $question->question_text = $qData['text'];
-                $question->options = json_encode($qData['options']);
-                $question->correct_index = $qData['correctIndex'];
-
-                // Slug check
-                $baseQuestionSlug = Str::slug(Str::limit($qData['text'], 50));
-                $slug = $baseQuestionSlug;
-                $counter = 1;
-                while (Question::where('slug', $slug)->where('id', '!=', $question->id)->exists()) {
-                    $slug = $baseQuestionSlug . '-' . $counter++;
-                }
-                $question->slug = $slug;
-
-                if ($question->isDirty()) {
-                    $question->save();
-                }
-            }
-
-            DB::commit();
-
-            return response()->json(['message' => 'Data updated successfully']);
-        } catch (Exception $ex) {
-            DB::rollBack();
-            Log::error("Error updating topic: " . $ex->getMessage());
-            return response()->json(['message' => 'Error updating data'], 500);
-        }
-    }
 
     public function isAnswered($topic_id)
     {
@@ -610,5 +556,337 @@ class QuestionManagerController extends Controller
             Log::error($ex->getMessage());
             return response()->json(['message' => 'An unexpected error occurred']);
         }
+    }
+
+
+    public function update(Request $request, $id)
+    {
+        // FormData sends `questions` and `schedule` as JSON strings.
+        // Merge them back into arrays so validation + the rest of the method
+        // can treat them like normal request input.
+        if (is_string($request->input('questions'))) {
+            $request->merge([
+                'questions' => json_decode($request->input('questions'), true),
+            ]);
+        }
+        if (is_string($request->input('schedule'))) {
+            $request->merge([
+                'schedule' => json_decode($request->input('schedule'), true),
+            ]);
+        }
+
+        $request->validate([
+            'subject'                  => ['required', 'string'],
+            'topics'                   => ['required', 'array', 'min:1'],
+            'topics.*'                 => ['required', 'string'],
+            'questions'                => ['required', 'array', 'min:1'],
+            'questions.*.id'           => ['nullable', 'integer', 'exists:questions,id'], // ⬅ new, optional
+            'questions.*.text'         => ['required', 'string'],
+            'questions.*.options'      => ['required', 'array', 'min:1'],
+            'questions.*.correctIndex' => ['required', 'integer'],
+            'file'                     => ['nullable', 'file', 'mimes:pdf'],
+            'schedule'                 => ['nullable', 'array'],
+            'schedule.startDate'       => ['required_with:schedule', 'date'],
+            'schedule.endDate'         => ['nullable', 'date', 'after:schedule.startDate'],
+            'schedule.durationMinutes' => ['nullable', 'integer', 'min:1'],
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $topic   = Topic::with(['subject', 'questions'])->findOrFail($id);
+            $subject = $topic->subject;
+
+            // ---- Resolve schedule (unchanged) ----
+            $schedule        = $request->input('schedule');
+            $publishedAt     = $topic->questions->first()?->published_at ?? now();
+            $availableFrom   = null;
+            $availableUntil  = null;
+            $durationMinutes = null;
+
+            if (! empty($schedule)) {
+                $availableFrom   = Carbon::parse($schedule['startDate']);
+                $availableUntil  = ! empty($schedule['endDate'])
+                    ? Carbon::parse($schedule['endDate']) : null;
+                $durationMinutes = ! empty($schedule['durationMinutes'])
+                    ? (int) $schedule['durationMinutes'] : null;
+            }
+
+            // ---- Subject update ----
+            if ($subject->name !== $request->subject) {
+                $subject->name = trim($request->subject);
+                $subject->slug = $this->uniqueSlug(Subject::class, $request->subject, $subject->id);
+                $subject->save();
+            }
+
+            // ---- File update (unchanged) ----
+            if ($request->hasFile('file')) {
+                $file = $request->file('file');
+                $uploadDir = storage_path('app/public/questions');
+                if (! is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+
+                $newFileHash      = md5_file($file->getRealPath());
+                $existingFilePath = $uploadDir . '/' . $topic->fileName;
+                $existingFileHash = file_exists($existingFilePath)
+                    ? md5_file($existingFilePath) : null;
+
+                if ($newFileHash !== $existingFileHash) {
+                    $fileName = time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
+                    $file->move($uploadDir, $fileName);
+                    $topic->fileName = $fileName;
+                    $topic->save();
+                }
+            }
+
+            // ---- Primary topic rename ----
+            if ($topic->name !== $request->topics[0]) {
+                $topic->name = trim($request->topics[0]);
+                $topic->slug = $this->uniqueSlug(Topic::class, $request->topics[0], $topic->id);
+                $topic->save();
+            }
+
+            // =====================================================================
+            // QUESTION SYNC (primary topic) — ID-based, covers add / update /
+            // delete-from-any-position. Falls back to index matching if the
+            // frontend hasn't started sending IDs yet.
+            // =====================================================================
+            $this->syncTopicQuestions(
+                $topic,
+                $request->questions,
+                $publishedAt,
+                $availableFrom,
+                $availableUntil,
+                $durationMinutes
+            );
+
+            // =====================================================================
+            // ADDITIONAL TOPICS (topics[1..n])
+            //   Mirrors store(): every topic under a subject gets the same
+            //   questions. Existing topics are kept in sync; new ones are created.
+            //   Topics NOT in the payload are left alone (deleting them here
+            //   would be destructive — that needs a dedicated endpoint).
+            // =====================================================================
+            foreach (array_slice($request->topics, 1) as $topicName) {
+                $sibling = Topic::where('subject_id', $subject->id)
+                    ->where('name', trim($topicName))
+                    ->first();
+
+                $siblingIsNew = ! $sibling;
+
+                if ($siblingIsNew) {
+                    $sibling = Topic::create([
+                        'subject_id' => $subject->id,
+                        'name'       => trim($topicName),
+                        'slug'       => $this->uniqueSlug(Topic::class, $topicName, null),
+                        'fileName'   => $topic->fileName,
+                    ]);
+                }
+
+                // Replace sibling's question set with copies of the current questions.
+                // (Siblings do not share question IDs with the primary topic — they
+                // are independent copies, matching store()'s behaviour.)
+                $sibling->questions()->delete(); // soft delete
+
+                foreach ($request->questions as $qData) {
+                    Question::create([
+                        'topic_id'         => $sibling->id,
+                        'question_text'    => $qData['text'],
+                        'slug'             => $this->uniqueSlug(Question::class, $qData['text'], null, 50),
+                        'options'          => json_encode($qData['options']),
+                        'correct_index'    => $qData['correctIndex'],
+                        'published_at'     => $publishedAt,
+                        'available_from'   => $availableFrom,
+                        'available_until'  => $availableUntil,
+                        'duration_minutes' => $durationMinutes,
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message'      => 'Quiz updated successfully',
+                'availability' => [
+                    'mode'             => $schedule ? 'scheduled' : 'available_now',
+                    'available_from'   => $availableFrom?->toIso8601String(),
+                    'available_until'  => $availableUntil?->toIso8601String(),
+                    'duration_minutes' => $durationMinutes,
+                ],
+            ]);
+        } catch (Exception $ex) {
+            DB::rollBack();
+            Log::error('Error updating quiz: ' . $ex->getMessage());
+            return response()->json(['message' => 'Error updating quiz'], 500);
+        }
+    }
+
+/* ============================================================
+ |  Helpers
+ ============================================================ */
+
+    /**
+     * Sync a topic's question set from the payload.
+     *
+     *  • Questions with `id`              → update that row
+     *  • Questions with `id == null`      → create a new row
+     *  • Existing rows NOT in the payload → soft delete (from any position)
+     *
+     * Falls back to index-based matching ONLY if no question has an `id`
+     * — that keeps the old frontend working while you migrate.
+     */
+    private function syncTopicQuestions(
+        Topic $topic,
+        array $questionsData,
+        Carbon $publishedAt,
+        ?Carbon $availableFrom,
+        ?Carbon $availableUntil,
+        ?int $durationMinutes
+    ): void {
+        $existing  = $topic->questions()->get()->keyBy('id');
+        $hasAnyIds = collect($questionsData)->contains(fn($q) => ! empty($q['id']));
+        $seenIds   = [];
+
+        foreach ($questionsData as $index => $qData) {
+            if ($hasAnyIds) {
+                if (! empty($qData['id'])) {
+                    $question = $existing->get($qData['id']);
+                    if (! $question) {
+                        throw new \RuntimeException(
+                            "Question {$qData['id']} does not belong to topic {$topic->id}"
+                        );
+                    }
+                } else {
+                    $question = new Question(['topic_id' => $topic->id]);
+                }
+            } else {
+                // Legacy fallback — no IDs in payload
+                $question = $existing->values()->get($index)
+                    ?? new Question(['topic_id' => $topic->id]);
+            }
+
+            $question->fill([
+                'question_text'    => $qData['text'],
+                'slug'             => $this->uniqueSlug(Question::class, $qData['text'], $question->id, 50),
+                'options'          => json_encode($qData['options']),
+                'correct_index'    => $qData['correctIndex'],
+                'published_at'     => $publishedAt,
+                'available_from'   => $availableFrom,
+                'available_until'  => $availableUntil,
+                'duration_minutes' => $durationMinutes,
+                'closed_at'        => null,
+            ])->save();
+
+            $seenIds[] = $question->id;
+        }
+
+        // Soft-delete anything not in the payload (from ANY position)
+        $toDelete = $existing->keys()->diff($seenIds);
+        if ($toDelete->isNotEmpty()) {
+            Question::whereIn('id', $toDelete)->delete();
+            Log::info('Removed questions on quiz edit', [
+                'topic_id' => $topic->id,
+                'removed'  => $toDelete->all(),
+            ]);
+        }
+    }
+
+    private function uniqueSlug(
+        string $model,
+        string $value,
+        ?int $excludeId = null,
+        int $limit = 100
+    ): string {
+        $base    = Str::slug(Str::limit($value, $limit));
+        $slug    = $base;
+        $counter = 1;
+
+        // Only include trashed rows when the model supports soft deletes.
+        // Otherwise `withTrashed()` throws (e.g. on Subject, which has no
+        // deleted_at column).
+        $query = in_array(
+            \Illuminate\Database\Eloquent\SoftDeletes::class,
+            class_uses_recursive($model)
+        )
+            ? $model::withTrashed()
+            : $model::query();
+
+        while (
+            (clone $query)
+            ->where('slug', $slug)
+            ->when($excludeId, fn($q) => $q->where('id', '!=', $excludeId))
+            ->exists()
+        ) {
+            $slug = $base . '-' . $counter++;
+        }
+
+        return $slug;
+    }
+
+
+    /**
+     * Fetch only available quizzes for the logged-in user,
+     * along with their score if they have already taken it.
+     */
+    public function getUserQuizzes(Request $request)
+    {
+        $userId = Auth::id();
+
+        // 1. Fetch subjects that have topics with available questions
+        $subjects = Subject::with(['topics' => function ($query) {
+            $query->whereHas('questions', function ($q) {
+                $q->available(); // ⬅ Only fetch topics that have available questions
+            })->withCount('questions');
+        }])
+            ->whereHas('topics', function ($query) {
+                $query->whereHas('questions', function ($q) {
+                    $q->available();
+                });
+            })
+            ->orderBy('id', 'DESC')
+            ->paginate(10);
+
+        // 2. Get the user's answers for these topics to avoid N+1 queries
+        $topicIds = $subjects->pluck('topics.*.id')->flatten();
+
+        $answers = Answer::where('user_id', $userId)
+            ->whereIn('topic_id', $topicIds)
+            ->get()
+            ->keyBy('topic_id');
+
+        // 3. Attach answer status (is_answered, score, total) to each topic
+        foreach ($subjects as $subject) {
+            foreach ($subject->topics as $topic) {
+                $answer = $answers->get($topic->id);
+                $topic->is_answered = (bool) $answer;
+                $topic->score = $answer ? $answer->score : null;
+                $topic->total = $answer ? $answer->total : null;
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $subjects->items(),
+            'pagination' => [
+                'total' => $subjects->total(),
+                'per_page' => $subjects->perPage(),
+                'current_page' => $subjects->currentPage(),
+                'last_page' => $subjects->lastPage(),
+                'from' => $subjects->firstItem(),
+                'to' => $subjects->lastItem()
+            ]
+        ]);
+    }
+
+    /**
+     * SECURITY FIX: Prevent users from fetching questions for future/expired quizzes
+     */
+    public function getQuestions(Topic $topic)
+    {
+        $questions = $topic->questions()->select('id', 'question_text', 'options', 'correct_index')->get();
+
+        return response()->json([
+            'success' => true,
+            'questions' => $questions
+        ]);
     }
 }
