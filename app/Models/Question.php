@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Question extends Model
 {
     use SoftDeletes;
-    
+
     protected $fillable = [
         'question_text',
         'topic_id',
@@ -130,16 +130,20 @@ class Question extends Model
     {
         $now = now();
 
-        return $q->whereNotNull('published_at')
-                 ->whereNull('closed_at')
-                 ->where(function ($qq) use ($now) {
-                     $qq->whereNull('available_from')
-                        ->orWhere('available_from', '<=', $now);
-                 })
-                 ->where(function ($qq) use ($now) {
-                     $qq->whereNull('available_until')
-                        ->orWhere('available_until', '>', $now);
-                 });
+        return $q->where(function ($qq) use ($now) {
+            // Allow NULL (legacy questions) OR valid published_at
+            $qq->whereNull('published_at')
+                ->orWhere('published_at', '<=', $now);
+        })
+            ->whereNull('closed_at')
+            ->where(function ($qq) use ($now) {
+                $qq->whereNull('available_from')
+                    ->orWhere('available_from', '<=', $now);
+            })
+            ->where(function ($qq) use ($now) {
+                $qq->whereNull('available_until')
+                    ->orWhere('available_until', '>', $now);
+            });
     }
 
     public function scopeScheduled(Builder $q): Builder
@@ -147,8 +151,8 @@ class Question extends Model
         $now = now();
 
         return $q->whereNotNull('published_at')
-                 ->whereNull('closed_at')
-                 ->whereNotNull('available_from')
-                 ->where('available_from', '>', $now);
+            ->whereNull('closed_at')
+            ->whereNotNull('available_from')
+            ->where('available_from', '>', $now);
     }
 }
