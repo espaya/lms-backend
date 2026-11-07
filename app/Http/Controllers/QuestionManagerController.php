@@ -22,6 +22,11 @@ use Carbon\Carbon;
 
 class QuestionManagerController extends Controller
 {
+    /**
+     * Show the application dashboard.
+     *
+     * @return \Illuminate\Contracts\Support\Renderable
+     */
     public function index()
     {
         $subjects = Subject::with(['topics'])->orderBy('id', 'DESC')->paginate(10);

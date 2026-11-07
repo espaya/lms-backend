@@ -6,12 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Exception;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;  // ⬅ Add this line here
+use App\Models\UploadForms;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 
 class AdminFormsController extends Controller
 {
-    /**/ 
+    /**/
     public function index(string $username)
     {
         try {
@@ -85,6 +88,97 @@ class AdminFormsController extends Controller
         } catch (Exception $ex) {
             Log::error($ex->getMessage());
             return response()->json(['message' => 'An unexpected error occurred'], 500);
+        }
+    }
+
+    /* Upload Forms */
+    public function uploadForms(Request $request)
+    {
+        $request->validate([
+            'form_name' => 'required|string',
+            'document'  => 'required|mimes:doc,docx,pdf|max:10240', // 10MB max
+        ], [
+            'form_name.required' => 'Form name is required',
+            'form_name.string' => 'Form name must be a string',
+            'document.required' => 'Document is required',
+            'document.mimes' => 'Document must be a Word file (doc or docx) or PDF',
+            'document.max' => 'Document size must not exceed 10MB',
+        ]);
+
+        if (!$request->hasFile('document')) {
+            return response()->json(['message' => 'No document uploaded'], 400);
+        }
+
+        $uploadedFilePath = null;
+
+        DB::beginTransaction();
+
+        try {
+            $file = $request->file('document');
+
+            // 2. Ensure the directory exists
+            $uploadDir = storage_path('app/public/forms');
+            if (!File::exists($uploadDir)) {
+                File::makeDirectory($uploadDir, 0755, true, true);
+            }
+
+            // 3. Generate safe filename
+            $filename = time() . '_' . Str::slug($request->form_name) . '.' . $file->getClientOriginalExtension();
+
+            // 4. Save the file
+            $file->storeAs('forms', $filename, 'public');
+
+            // Keep track of the relative path for cleanup
+            $uploadedFilePath = 'forms/' . $filename;
+
+            // 5. Save to Database
+            UploadForms::create([
+                'form_name'     => $request->form_name,
+                'document_path' => $uploadedFilePath
+            ]);
+
+            DB::commit();
+
+            return response()->json(['message' => 'Uploaded successfully'], 200);
+        } catch (Exception $ex) {
+            // 6. Rollback Database
+            DB::rollBack();
+
+            // 7. Delete the uploaded file if it exists
+            if ($uploadedFilePath && File::exists(storage_path('app/public/' . $uploadedFilePath))) {
+                File::delete(storage_path('app/public/' . $uploadedFilePath));
+            }
+
+            Log::error('Form upload failed: ' . $ex->getMessage());
+
+            return response()->json(['message' => 'An unexpected error occurred'], 500);
+        }
+    }
+
+    /* Get All uploaded Forms */
+    public function getAllForms(Request $request)
+    {
+        try {
+            $perPage = $request->input('per_page', 10);
+
+            $forms = UploadForms::orderBy('id', 'DESC')->paginate($perPage);
+
+            return response()->json([
+                'success' => true,
+                'data' => $forms->items(),
+                'pagination' => [
+                    'total' => $forms->total(),
+                    'per_page' => $forms->perPage(),
+                    'current_page' => $forms->currentPage(),
+                    'last_page' => $forms->lastPage(),
+                ]
+            ], 200);
+        } catch (\Exception $ex) {
+            Log::error('Error getting forms: ' . $ex->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving forms'
+            ], 500);
         }
     }
 }

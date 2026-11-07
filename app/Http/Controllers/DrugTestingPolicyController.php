@@ -16,11 +16,21 @@ class DrugTestingPolicyController extends Controller
 {
     protected $userProfileService;
 
+    /**
+     * Create a new controller instance.   Dashboard Controller
+     *
+     * @return void
+     */
     public function __construct(UserProfileService $userProfileService)
     {
         $this->userProfileService = $userProfileService;
     }
 
+    /**
+     * Show the application dashboard.
+     *
+     * @return \Illuminate\Contracts\Support\Renderable
+     */
     public function index(UserProfileService $userProfileService)
     {
         // auth user
@@ -42,6 +52,7 @@ class DrugTestingPolicyController extends Controller
         }
     }
 
+    /* Store forms */
     public function store(Request $request)
     {
         $userID = Auth::id();

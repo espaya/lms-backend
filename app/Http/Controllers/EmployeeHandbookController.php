@@ -18,7 +18,11 @@ class EmployeeHandbookController extends Controller
 
     protected object $userProfileService;
 
-    /* constructor */
+    /**
+     * Create a new controller instance.   Dashboard Controller
+     *
+     * @return void
+     */
     public function __construct(UserProfileService $userProfileService)
     {
         $this->userProfileService = $userProfileService;

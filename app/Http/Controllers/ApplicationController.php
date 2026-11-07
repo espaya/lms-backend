@@ -82,6 +82,7 @@ class ApplicationController extends Controller
         }
     }
 
+    /* Store forms */ 
     public function store(Request $request)
     {
         // validate form data

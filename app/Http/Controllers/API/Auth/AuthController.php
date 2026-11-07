@@ -12,6 +12,7 @@ use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
+    /* Login */
     public function login(Request $request)
     {
         // Validation rules
@@ -21,9 +22,9 @@ class AuthController extends Controller
         ];
 
         // Only require captcha in non-local environments
-        // if (!app()->environment('local')) {
-        //     $rules['captcha_token'] = 'required|string';
-        // }
+        if (!app()->environment('local')) {
+            $rules['captcha_token'] = 'required|string';
+        }
 
         $request->validate($rules, [
             'email.required' => 'This field is required',
@@ -31,23 +32,23 @@ class AuthController extends Controller
             'password.required' => 'This field is required',
             'password.string' => 'Invalid inputs',
             'password.min' => 'Password is too short',
-            // 'captcha_token.required' => 'Please complete the captcha'
+            'captcha_token.required' => 'Please complete the captcha'
         ]);
 
         // ✅ Verify reCAPTCHA only if not in local environment
-        // if (!app()->environment('local')) {
-        //     $recaptchaResponse = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
-        //         'secret' => env('RECAPTCHA_SECRET_KEY'),
-        //         'response' => $request->captcha_token,
-        //         'remoteip' => $request->ip()
-        //     ])->json();
+        if (!app()->environment('local')) {
+            $recaptchaResponse = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+                'secret' => env('RECAPTCHA_SECRET_KEY'),
+                'response' => $request->captcha_token,
+                'remoteip' => $request->ip()
+            ])->json();
 
-        //     if (!isset($recaptchaResponse['success']) || $recaptchaResponse['success'] !== true) {
-        //         return response()->json([
-        //             'message' => 'Captcha verification failed. Please try again.'
-        //         ], 422);
-        //     }
-        // }
+            if (!isset($recaptchaResponse['success']) || $recaptchaResponse['success'] !== true) {
+                return response()->json([
+                    'message' => 'Captcha verification failed. Please try again.'
+                ], 422);
+            }
+        }
 
         // Throttle Key
         $throttleKey = Str::lower($request->email) . '|' . $request->ip();
@@ -89,6 +90,7 @@ class AuthController extends Controller
     }
 
 
+    /* Logout */
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
@@ -96,6 +98,7 @@ class AuthController extends Controller
         return response()->json(['message' => 'Logged out']);
     }
 
+    /* Get Current User */
     public function me(Request $request)
     {
         return response()->json($request->user());

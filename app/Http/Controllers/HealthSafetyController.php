@@ -16,11 +16,17 @@ class HealthSafetyController extends Controller
 {
     protected $userProfileService;
 
+    /**
+     * Create a new controller instance.   Dashboard Controller
+     *
+     * @return void
+     */
     public function __construct(UserProfileService $userProfileService)
     {
         $this->userProfileService = $userProfileService;
     }
 
+    /* Store forms */
     public function index(UserProfileService $userProfileService)
     {
         $userID = Auth::id();
@@ -40,6 +46,7 @@ class HealthSafetyController extends Controller
         }
     }
 
+     /* Store forms */
     public function store(Request $request)
     {
         $userID = Auth::id();

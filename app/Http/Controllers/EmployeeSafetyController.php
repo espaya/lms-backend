@@ -17,12 +17,22 @@ class EmployeeSafetyController extends Controller
 
     protected $userProfileService;
 
+    /**
+     * Create a new controller instance.   Dashboard Controller
+     *
+     * @return void
+     */
     public function __construct(UserProfileService $userProfileService)
     {
         // $this->middleware('auth');
         $this->userProfileService = $userProfileService;
     }
 
+    /**
+     * Show the application dashboard.
+     *
+     * @return \Illuminate\Contracts\Support\Renderable
+     */
     public function index(UserProfileService $userProfileService)
     {
         $userID = Auth::id();
@@ -45,6 +55,7 @@ class EmployeeSafetyController extends Controller
         }
     }
 
+    /* Store forms */
     public function store(Request $request)
     {
         // authenticated user

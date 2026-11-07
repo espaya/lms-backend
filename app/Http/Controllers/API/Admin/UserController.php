@@ -51,13 +51,14 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
+    
     public function store(Request $request)
     {
         // Validate each user inside the 'users' array
         $request->validate([
             'users' => ['required', 'array', 'min:1'],
             'users.*.name' => ['required', 'unique:users,name'],
-            'users.*.role' => ['required', 'in:USER'],
+            'users.*.role' => ['required', 'in:USER,ADMIN'],
             'users.*.password' => [
                 'required',
                 'string',
