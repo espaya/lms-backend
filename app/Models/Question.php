@@ -155,4 +155,30 @@ class Question extends Model
             ->whereNotNull('available_from')
             ->where('available_from', '>', $now);
     }
+
+    /**
+     * The "booted" method of the model.
+     * This is where we hook into the Eloquent lifecycle events.
+     */
+    // protected static function booted()
+    // {
+    //     static::saving(function ($question) {
+    //         // If a new available_from is explicitly provided
+    //         if ($question->available_from) {
+    //             // And it is in the past...
+    //             if ($question->available_from->isPast()) {
+    //                 // ...Override the created_at with the backdated time
+    //                 $question->created_at = $question->available_from;
+    //                 $question->timestamps = false;
+    //             }
+    //         } else {
+    //             // If NO available_from is provided (meaning the admin just edited text/questions),
+    //             // and the record ALREADY existed in the database, preserve its original created_at.
+    //             if ($question->exists && $question->getOriginal('created_at')) {
+    //                 $question->created_at = $question->getOriginal('created_at');
+    //                 $question->timestamps = false;
+    //             }
+    //         }
+    //     });
+    // }
 }

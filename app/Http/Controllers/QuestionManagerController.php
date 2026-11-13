@@ -29,7 +29,7 @@ class QuestionManagerController extends Controller
      */
     public function index()
     {
-        $subjects = Subject::with(['topics'])->orderBy('id', 'DESC')->paginate(10);
+        $subjects = Subject::with(['topics', 'topics.questions'])->orderBy('id', 'DESC')->paginate(10);
 
         return response()->json([
             'success' => true,
@@ -217,6 +217,13 @@ class QuestionManagerController extends Controller
                 ]);
 
                 foreach ($request->questions as $questionData) {
+
+                    // ⬇ SAME LOGIC FOR SIBLINGS
+                    $createdAt = now();
+                    if ($availableFrom && $availableFrom->isPast()) {
+                        $createdAt = $availableFrom;
+                    }
+
                     $baseQuestionSlug = Str::slug(Str::limit($questionData['text'], 50));
                     $questionSlug = $baseQuestionSlug;
                     $questionCounter = 1;
@@ -237,6 +244,9 @@ class QuestionManagerController extends Controller
                         'available_from'   => $availableFrom,
                         'available_until'  => $availableUntil,
                         'duration_minutes' => $durationMinutes,
+                        'created_at'       => $createdAt, // ⬅ FORCE HERE
+                        'updated_at'       => now(), // ⬅ ADD THIS
+
                         // 'closed_at' stays NULL — manual close is a separate action.
                     ]);
                 }
@@ -602,7 +612,7 @@ class QuestionManagerController extends Controller
             $topic   = Topic::with(['subject', 'questions'])->findOrFail($id);
             $subject = $topic->subject;
 
-            // ---- Resolve schedule (unchanged) ----
+                        // ---- Resolve schedule ----
             $schedule        = $request->input('schedule');
             $publishedAt     = $topic->questions->first()?->published_at ?? now();
             $availableFrom   = null;
@@ -610,11 +620,27 @@ class QuestionManagerController extends Controller
             $durationMinutes = null;
 
             if (! empty($schedule)) {
+                // Admin explicitly sent a new schedule
                 $availableFrom   = Carbon::parse($schedule['startDate']);
                 $availableUntil  = ! empty($schedule['endDate'])
                     ? Carbon::parse($schedule['endDate']) : null;
                 $durationMinutes = ! empty($schedule['durationMinutes'])
                     ? (int) $schedule['durationMinutes'] : null;
+            } else {
+                // ⬇ Admin did not send a schedule. Check if it was already scheduled in the past and preserve it.
+                $existingQuestion = $topic->questions->first();
+                
+                if ($existingQuestion && $existingQuestion->available_from) {
+                    // We preserve it if it's in the past (backdated). 
+                    // If it's in the future, we technically could preserve it too, 
+                    // but usually "Save (Available Now)" means clear future schedules.
+                    // Let's preserve ALL existing schedules to be safe, unless you want to wipe future ones.
+                    if ($existingQuestion->available_from->lte(now())) {
+                        $availableFrom   = $existingQuestion->available_from;
+                        $availableUntil  = $existingQuestion->available_until;
+                        $durationMinutes = $existingQuestion->duration_minutes;
+                    }
+                }
             }
 
             // ---- Subject update ----
@@ -693,6 +719,13 @@ class QuestionManagerController extends Controller
                 $sibling->questions()->delete(); // soft delete
 
                 foreach ($request->questions as $qData) {
+
+                    // ⬇ SAME LOGIC FOR SIBLINGS
+                    $createdAt = now();
+                    if ($availableFrom && $availableFrom->isPast()) {
+                        $createdAt = $availableFrom;
+                    }
+
                     Question::create([
                         'topic_id'         => $sibling->id,
                         'question_text'    => $qData['text'],
@@ -703,6 +736,9 @@ class QuestionManagerController extends Controller
                         'available_from'   => $availableFrom,
                         'available_until'  => $availableUntil,
                         'duration_minutes' => $durationMinutes,
+                        'created_at'       => $createdAt, // ⬅ FORCE HERE
+                        'updated_at'       => now(), // ⬅ ADD THIS
+
                     ]);
                 }
             }
@@ -764,11 +800,31 @@ class QuestionManagerController extends Controller
                     $question = new Question(['topic_id' => $topic->id]);
                 }
             } else {
-                // Legacy fallback — no IDs in payload
                 $question = $existing->values()->get($index)
                     ?? new Question(['topic_id' => $topic->id]);
             }
 
+            // -------------------------------------------------------------
+            // RESOLVE THE CREATED_AT DATE
+            // -------------------------------------------------------------
+            $forcedCreatedAt = $question->created_at ?? now(); // Keep existing by default
+
+            if ($availableFrom) {
+                if ($availableFrom->isPast()) {
+                    // If scheduled for the past (backdated), set created_at to match
+                    $forcedCreatedAt = $availableFrom;
+                } else {
+                    // If scheduled for the future, reset to now
+                    $forcedCreatedAt = now();
+                }
+            } else {
+                // If no schedule (Available Now), reset created_at to now
+                $forcedCreatedAt = now();
+            }
+
+            // -------------------------------------------------------------
+            // 1. UPDATE THE FIELDS (excluding created_at)
+            // -------------------------------------------------------------
             $question->fill([
                 'question_text'    => $qData['text'],
                 'slug'             => $this->uniqueSlug(Question::class, $qData['text'], $question->id, 50),
@@ -779,7 +835,20 @@ class QuestionManagerController extends Controller
                 'available_until'  => $availableUntil,
                 'duration_minutes' => $durationMinutes,
                 'closed_at'        => null,
-            ])->save();
+                'updated_at'       => now(),
+            ]);
+
+            // 2. Save the main fields
+            $question->save();
+
+            // 3. Force the created_at directly via Query Builder
+            // This bypasses Eloquent's automatic timestamp handling completely
+            $question->newQuery()->where('id', $question->id)->update([
+                'created_at' => $forcedCreatedAt,
+            ]);
+
+            // Keep the instance synced with the DB
+            $question->created_at = $forcedCreatedAt;
 
             $seenIds[] = $question->id;
         }
@@ -837,11 +906,18 @@ class QuestionManagerController extends Controller
         $userId = Auth::id();
 
         // 1. Fetch subjects that have topics with available questions
-        $subjects = Subject::with(['topics' => function ($query) {
-            $query->whereHas('questions', function ($q) {
-                $q->available(); // ⬅ Only fetch topics that have available questions
-            })->withCount('questions');
-        }])
+        $subjects = Subject::with([
+            'topics' => function ($query) {
+                // Only fetch topics that actually have available questions
+                $query->whereHas('questions', function ($q) {
+                    $q->available();
+                });
+            },
+            'topics.questions' => function ($query) {
+                // Only load the questions that are currently available
+                $query->available();
+            }
+        ])
             ->whereHas('topics', function ($query) {
                 $query->whereHas('questions', function ($q) {
                     $q->available();
@@ -861,6 +937,9 @@ class QuestionManagerController extends Controller
         // 3. Attach answer status (is_answered, score, total) to each topic
         foreach ($subjects as $subject) {
             foreach ($subject->topics as $topic) {
+                // ⬇ ADDED: Attach the questions count to the topic dynamically
+                $topic->questions_count = $topic->questions->count();
+
                 $answer = $answers->get($topic->id);
                 $topic->is_answered = (bool) $answer;
                 $topic->score = $answer ? $answer->score : null;
