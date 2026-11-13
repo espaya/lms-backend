@@ -24,126 +24,150 @@ class User extends Authenticatable
         'email',
         'password',
         'privacy',
-        'role'
+        'role',
+        'status',
     ];
 
 
+    /* Application Form */
     public function applicationForm()
     {
         return $this->hasOne(EmploymentApplication::class, 'applicant_id');
     }
 
+    /* Application Form */
     public function verification()
     {
         return $this->hasOne(Verification::class, 'applicant_id');
     }
 
+    /* Application Form */
     public function attendanceTardiness()
     {
         return $this->hasOne(AttendanceTardiness::class, 'applicant_id');
     }
 
+    /* Application Form */
     public function confidentialityInformation()
     {
         return $this->hasOne(ConfidentialityInformation::class, 'applicant_id');
     }
 
+    /* Application Form */
     public function criminalHistorySearch()
     {
         return $this->hasOne(CriminalHistorySearch::class, 'applicant_id');
     }
 
+    /* Application Form */
     public function disclaimerWaiverLiability()
     {
         return $this->hasOne(DisclaimerWaiverLiability::class, 'applicant_id');
     }
 
+    /* Application Form */
     public function drugTestingPolicy()
     {
         return $this->hasOne(DrugTestingPolicy::class, 'applicant_id');
     }
 
+    /* Application Form */
     public function employeeAgreement()
     {
         return $this->hasOne(EmployeeAgreement::class, 'applicant_id');
     }
 
+    /* Application Form */
     public function employeeConduct()
     {
         return $this->hasOne(EmployeeConduct::class, 'applicant_id');
     }
 
+    /* Application Form */
     public function employeeDressCode()
     {
         return $this->hasOne(EmployeeDressCode::class, 'applicant_id');
     }
 
+    /* Application Form */
     public function employeeOrientation()
     {
         return $this->hasOne(EmployeeOrientation::class, 'applicant_id');
     }
 
+    /* Application Form */
     public function employeeReferenceCheck()
     {
         return $this->hasOne(EmployeeReferenceCheck::class, 'applicant_id');
     }
 
+    /* Application Form */
     public function employeeSafety()
     {
         return $this->hasOne(EmployeeSafety::class, 'applicant_id');
     }
 
+    /* Application Form */
     public function healthSafetyAgreement()
     {
         return $this->hasOne(HealthSafetyAgreement::class, 'applicant_id');
     }
 
+    /* Application Form */
     public function homeHealthAide()
     {
         return $this->hasOne(HomeHealthAide::class, 'applicant_id');
     }
 
+    /* Application Form */
     public function infectionControl()
     {
         return $this->hasOne(InfectionControlAgreement::class, 'applicant_id');
     }
 
+    /* Application Form */
     public function nonCompeteAgreement()
     {
         return $this->hasOne(NonCompeteAgreement::class, 'applicant_id');
     }
 
+    /* Application Form */
     public function policyProcedure()
     {
         return $this->hasOne(PolicyAndProcedure::class, 'applicant_id');
     }
 
+    /* Application Form */
     public function reporting()
     {
         return $this->hasOne(Reporting::class, 'applicant_id');
     }
 
+    /* Application Form */
     public function sexualHarassment()
     {
         return $this->hasOne(SexualHarassment::class, 'applicant_id');
     }
 
+    /* Application Form */
     public function smoking()
     {
         return $this->hasOne(Smoking::class, 'applicant_id');
     }
 
+    /* Application Form */
     public function swornDisclosure()
     {
         return $this->hasOne(SwornDisclosure::class, 'applicant_id');
     }
 
+    /* Application Form */
     public function universalPrecaution()
     {
         return $this->hasOne(UniversalPrecautions::class, 'applicant_id');
     }
     
-    
+    /* Application Form */
     public function employeeHandbook()
     {
         return $this->hasOne(EmployeeHandbook::class, 'applicant_id');

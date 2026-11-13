@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use Exception;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 
@@ -62,6 +64,7 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)
             ->orWhere('name', $request->email)
+            ->where('status', 1)
             ->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
@@ -74,11 +77,9 @@ class AuthController extends Controller
         // Clear any previous throttle attempts
         RateLimiter::clear($throttleKey);
 
-        // Delete old tokens
-        $user->tokens()->delete();
+        $deviceName = $request->header('User-Agent') ? substr($request->header('User-Agent'), 0, 50) : 'Unknown Device';
 
-        // Issue token
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $token = $user->createToken($deviceName)->plainTextToken;
 
         return response()->json([
             'token' => $token,
@@ -93,9 +94,17 @@ class AuthController extends Controller
     /* Logout */
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
-
-        return response()->json(['message' => 'Logged out']);
+        try {
+            $request->user()->currentAccessToken()->delete();
+            return response()->json([
+                'message' => 'Logged out'
+            ], 200);
+        } catch (Exception $err) {
+            Log::error('Logout error: ' . $err->getMessage());
+            return response()->json([
+                'message' => 'An unexpected error occurred. Try again later'
+            ], 500);
+        }
     }
 
     /* Get Current User */

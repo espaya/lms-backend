@@ -51,7 +51,82 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
-    
+    /* Get previous employeee */
+    public function getPreviousEmployees(Request $request)
+    {
+        try {
+            $perPage = $request->input('per_page', 20); // Default 10 items per page
+            $users = User::where('status', 0)->where('role', "USER")
+                ->orderBy("name", "ASC")
+                ->paginate($perPage);
+
+            return response()->json([
+                'data' => $users->items(),
+                'meta' => [
+                    'current_page' => $users->currentPage(),
+                    'last_page' => $users->lastPage(),
+                    'per_page' => $users->perPage(),
+                    'total' => $users->total(),
+                ]
+            ], 200);
+        } catch (Exception $ex) {
+            Log::error("Error fetching previous employees: " . $ex->getMessage());
+            return response()->json(
+                ['message' => 'Error fetching previous employees, contact your website admin'],
+                500
+            );
+        }
+    }
+
+    /* Mark User as previous employee */
+    public function markAsPreviousEmployee(int $id)
+    {
+        try {
+            $user = User::findOrFail($id);
+
+            if (!$user) {
+                return response()->json(['message' => 'User not found!'], 404);
+            }
+
+            $user->status = 0; // Mark as previous employee
+            $user->save();
+
+            return response()->json([
+                'message' => 'User marked as previous employee successfully!'
+            ], 200);
+        } catch (Exception $ex) {
+            Log::error('Error marking user as previous employee: ' . $ex->getMessage());
+            return response()->json([
+                'message' => 'An unexpected error occurred'
+            ], 500);
+        }
+    }
+
+    /*Mark as active user */
+    public function markAsActiveUser(int $id)
+    {
+        try {
+            $user = User::where('id', $id)->where('status', 0)->first();
+
+            if (!$user) {
+                return response()->json(['message' => 'User not found!'], 404);
+            }
+
+            $user->status = 1; // Mark as active user
+            $user->save();
+
+            return response()->json([
+                'message' => 'User marked as active successfully!'
+            ], 200);
+        } catch (Exception $ex) {
+            Log::error('Error marking user as active: ' . $ex->getMessage());
+            return response()->json([
+                'message' => 'An unexpected error occurred'
+            ], 500);
+        }
+    } 
+
+    /* */
     public function store(Request $request)
     {
         // Validate each user inside the 'users' array
@@ -104,6 +179,7 @@ class UserController extends Controller
                     'password' => Hash::make($userData['password']),
                     'privacy' => trim($userData['privacy']),
                     'email' => trim($userData['email']),
+                    'status' => 1, // Set default status to 1 (active)
                 ]);
 
                 // email user after creating their account
@@ -120,7 +196,8 @@ class UserController extends Controller
         }
     }
 
-    public function destroy($id)
+    /* */
+    public function destroy(int $id)
     {
         try {
             $user = User::find($id);
@@ -545,7 +622,8 @@ class UserController extends Controller
         }
     }
 
-    public function updateUser(Request $request, $id)
+    /* */
+    public function updateUser(Request $request, int $id)
     {
         $request->validate([
             'name' => [
@@ -608,11 +686,12 @@ class UserController extends Controller
         }
     }
 
+    /* */
     public function index(Request $request)
     {
         try {
             $perPage = $request->input('per_page', 20); // Default 10 items per page
-            $users = User::where('role', "USER")
+            $users = User::where('status', 1)->where('role', "USER")
                 ->orderBy("name", "ASC")
                 ->paginate($perPage);
 
@@ -634,7 +713,8 @@ class UserController extends Controller
         }
     }
 
-    public function view($username)
+    /* */
+    public function view(string $username)
     {
         try {
             $user = User::where('name', $username)->first();
@@ -650,7 +730,8 @@ class UserController extends Controller
         }
     }
 
-    public function getUserAnswers(Request $request,  $username)
+    /* */
+    public function getUserAnswers(Request $request, string $username)
     {
         try {
             $perPage = $request->input("per_page", 10);

@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;  // ⬅ Add this line here
 use App\Models\UploadForms;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 
@@ -179,6 +180,57 @@ class AdminFormsController extends Controller
                 'success' => false,
                 'message' => 'Error retrieving forms'
             ], 500);
+        }
+    }
+
+    /**/
+    public function isAllFormsSigned()
+    { 
+        try {
+            // List all the relationships that require a signature
+            $relations = [
+                'applicationForm.signature',
+                'attendanceTardiness.signature',
+                'confidentialityInformation.signature',
+                'criminalHistorySearch.signature',
+                'disclaimerWaiverLiability.signature',
+                'drugTestingPolicy.signature',
+                'employeeAgreement.signature',
+                'employeeConduct.signature',
+                'employeeDressCode.signature',
+                'employeeHandbook.signature',
+                'employeeOrientation.signature',
+                'employeeReferenceCheck.signature',
+                'employeeSafety.signature',
+                'healthSafetyAgreement.signature',
+                'homeHealthAide.signature',
+                'infectionControl.signature',
+                'nonCompeteAgreement.signature',
+                'policyProcedure.signature',
+                'reporting.signature',
+                'sexualHarassment.signature',
+                'smoking.signature',
+                'swornDisclosure.signature',
+                'universalPrecaution.signature',
+                'verification.signature',
+            ];
+
+            $user = User::with($relations)->find(Auth::id());
+
+            if (!$user) {
+                return response()->json(['message' => 'User Not Found'], 404);
+            }
+
+            // Check if EVERY relationship has a signature (is not null)
+            $allSigned = collect($relations)->every(function ($relation) use ($user) {
+                // We use data_get() to safely traverse the dot-notation relationship
+                return data_get($user, $relation) !== null;
+            });
+
+            return response()->json(['signed' => $allSigned], 200);
+        } catch (Exception $ex) {
+            Log::error('Error checking signatures: ' . $ex->getMessage());
+            return response()->json(['message' => 'An unexpected error occurred'], 500);
         }
     }
 }

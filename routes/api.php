@@ -52,6 +52,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/topics/{topic}/questions', [QuestionManagerController::class, 'getQuestions']);
     Route::get('/answers/summary/{topicId}', [QuestionManagerController::class, 'summary']);
     Route::get('/answers/all/{topic}', [QuestionManagerController::class, 'showByTopic']);
+
+    Route::get('/is-all-forms-signed', [AdminFormsController::class, 'isAllFormsSigned']);
+
 });
 
 Route::middleware(['auth:sanctum', 'admin'])->group(function () {
@@ -89,6 +92,9 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::post('/admin/dashboard/upload-forms', [AdminFormsController::class, 'uploadForms']);
     Route::get('/admin/dashboard/get-forms', [AdminFormsController::class, 'getAllForms']);
 
+    Route::post('/admin/dashboard/mark-as-previous-employee/{id}', [UserController::class, 'markAsPreviousEmployee']);
+    Route::post('/admin/dashboard/mark-as-active-user/{id}', [UserController::class, 'markAsActiveUser']);
+    Route::get('/admin/dashboard/get-previous-employees', [UserController::class, 'getPreviousEmployees']);
 });
 
 
@@ -135,7 +141,7 @@ Route::middleware(['auth:sanctum', 'user'])->group(function () {
 
     Route::get('/user/employee-handbook-forms/get', [EmployeeHandbookController::class, 'index']);
     Route::post('/user/employee-handbook-forms', [EmployeeHandbookController::class, 'store']);
- 
+
     Route::get('/user/employee-reference-check-forms/get', [EmployeeReferenceController::class, 'index']);
     Route::post('/user/employee-reference-check-forms', [EmployeeReferenceController::class, 'store']);
 
@@ -174,5 +180,4 @@ Route::middleware(['auth:sanctum', 'user'])->group(function () {
 
     Route::get('/user/verification-of-professional-license-forms/get', [VerificationController::class, 'index']);
     Route::post('/user/verification-of-professional-license-forms', [VerificationController::class, 'store']);
-
 });

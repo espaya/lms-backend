@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Models\User;
 
 class AdminController extends Controller
 {
@@ -29,13 +30,13 @@ class AdminController extends Controller
      */
     public function users()
     {
-        $total = DB::table('users')->count();
+        $total = User::where('status', 1)->count();
 
-        $active = DB::table('users')
+        $active = User::where('status', 1)
             ->whereNotNull('email_verified_at')
             ->count();
 
-        $inactive = DB::table('users')
+        $inactive = User::where('status', 1)
             ->whereNull('email_verified_at')
             ->count();
 
@@ -118,9 +119,9 @@ class AdminController extends Controller
     public function quickActions()
     {
         return response()->json([
-            'totalUsers' => DB::table('users')->count(),
+            'totalUsers' => User::where('status', 1)->count(),
 
-            'newUsersToday' => DB::table('users')
+            'newUsersToday' => User::where('status', 1)
                 ->whereDate('created_at', Carbon::today())
                 ->count(),
 
@@ -374,7 +375,7 @@ class AdminController extends Controller
         $activities = collect();
 
         // 1. New users
-        $users = DB::table('users')
+        $users = DB::table('users')->where('status', 1)
             ->select(
                 DB::raw('"New user registered" as title'),
                 'created_at as date'
