@@ -51,7 +51,7 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
-    /* Get previous employeee */
+    /* Get all previous employeee */
     public function getPreviousEmployees(Request $request)
     {
         try {
@@ -142,7 +142,8 @@ class UserController extends Controller
             ],
             'users.*.confirm_password' => ['required', 'same:users.*.password'],
             'users.*.privacy' => ['required', 'in:1'],
-            'users.*.email' => ['required', 'email', 'unique:users,email']
+            'users.*.email' => ['required', 'email', 'unique:users,email'],
+            'users.*.activateForms' => ['nullable', 'in:1'],
         ], [
             'users.required' => 'You must provide at least one user.',
             'users.array' => 'Invalid format for users.',
@@ -167,6 +168,7 @@ class UserController extends Controller
             'users.*.email.required' => 'This field is required',
             'users.*.email.email' => 'Invalid email format',
             'users.*.email.unique' => 'You cannot use this email',
+            'users.*.activateForms.in' => 'Unknown activate forms input',
         ]);
 
         DB::beginTransaction();
@@ -179,6 +181,7 @@ class UserController extends Controller
                     'password' => Hash::make($userData['password']),
                     'privacy' => trim($userData['privacy']),
                     'email' => trim($userData['email']),
+                    'activateForms' => $userData['activateForms'] ?? null,
                     'status' => 1, // Set default status to 1 (active)
                 ]);
 

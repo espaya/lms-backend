@@ -26,6 +26,7 @@ class User extends Authenticatable
         'privacy',
         'role',
         'status',
+        'activateForms'
     ];
 
 
