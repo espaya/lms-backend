@@ -124,7 +124,7 @@ class UserController extends Controller
                 'message' => 'An unexpected error occurred'
             ], 500);
         }
-    } 
+    }
 
     /* */
     public function store(Request $request)
@@ -143,7 +143,7 @@ class UserController extends Controller
             'users.*.confirm_password' => ['required', 'same:users.*.password'],
             'users.*.privacy' => ['required', 'in:1'],
             'users.*.email' => ['required', 'email', 'unique:users,email'],
-            'users.*.activateForms' => ['nullable', 'in:1'],
+            'users.*.activateForms' => ['nullable', 'in:1,0'],
         ], [
             'users.required' => 'You must provide at least one user.',
             'users.array' => 'Invalid format for users.',
@@ -645,6 +645,7 @@ class UserController extends Controller
                     $fail('The old password is incorrect.');
                 }
             }],
+            'activateForms' => ['nullable', 'in:1,0'],
             'new_password' => [
                 'nullable',
                 'string',
@@ -667,6 +668,7 @@ class UserController extends Controller
             // Update fields
             $user->name = $request->name;
             $user->email = $request->email;
+            $user->activateForms = $request->activateForms ?? $user->activateForms;
             // $user->role = $request->role ?? $user->role;
 
             // Only hash and set password if a new one is provided
@@ -680,11 +682,16 @@ class UserController extends Controller
                 return response()->json(['message' => 'User updated successfully'], 200);
             }
 
+            // ⬇ Revoke all their tokens to log them out of all devices
+            $user->tokens()->delete();
+         
+
             return response()->json(['message' => 'No changes detected'], 200);
         } catch (\Exception $ex) {
             return response()->json([
+                Log::error($ex->getMessage()),
                 'message' => 'An error occurred while updating user.',
-                'error' => $ex->getMessage()
+
             ], 500);
         }
     }

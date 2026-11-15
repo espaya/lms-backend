@@ -101,6 +101,7 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
 
 Route::middleware(['auth:sanctum', 'user'])->group(function () {
     Route::get('/user/dashboard', fn() => response()->json(['message' => 'Welcome User']));
+    Route::get('/user/dashboard/is-show-forms-active', [StudentController::class, 'isShowForms']);
     // Add other API endpoints here;
     Route::post('/answers', [QuestionManagerController::class, 'storeAnswer']);
     Route::post('/user/update-my-profile/{id}', [StudentController::class, 'update']);

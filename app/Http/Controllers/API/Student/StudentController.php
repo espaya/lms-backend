@@ -90,4 +90,24 @@ class StudentController extends Controller
                 ], 500);
         }
     }
+
+    /* show forms active for this user? */ 
+    public function isShowForms()
+    {
+        $id = Auth::id(); // Get the authenticated user's ID
+        
+        try {
+            $user = User::find($id);
+
+            if (!$user) {
+                return response()->json(['message' => 'User not found'], 404);
+            }
+
+            return response()->json(['activateForms' => $user->activateForms], 200);
+        } catch (Exception $ex) {
+            Log::error('Error fetching user data: ' . $ex->getMessage());
+            return response()->json(['message' => 'Error getting user data'], 500);
+        }
+    }
+
 }
